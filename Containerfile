@@ -101,4 +101,9 @@ CMD ["/sbin/init"]
 
 ### LINTING
 ## Verify final image and contents are correct. --fatal-warnings catches issues.
-RUN bootc container lint --fatal-warnings
+## /run/host is a podman runtime mountpoint during earlier RUNs (clean-stage
+## must skip it) — clear the leftover directory here. --skip sysusers: the
+## bluefin-lts base ships /etc/passwd+group entries (gnome-initial-setup,
+## openvpn, ...) without sysusers.d declarations; that base artifact is not
+## fixable from this layer.
+RUN rm -rf /run/host && bootc container lint --fatal-warnings --skip sysusers

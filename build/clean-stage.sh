@@ -29,6 +29,10 @@ rm -rf "${CLEAN_ROOT}/.gitkeep"
 # buildah cache mount and is not present in this layer).
 find "${CLEAN_ROOT}/var" -mindepth 1 -maxdepth 1 -type d \! -name cache -exec rm -fr {} \;
 find "${CLEAN_ROOT}/var/cache" -mindepth 1 -maxdepth 1 -type d \! -name dnf -exec rm -fr {} \;
+# /var/cache/dnf is a cache mount during the script RUNs but a real layer dir
+# here — this RUN's own dnf call writes state files into it (bootc lint's
+# var-tmpfiles check rejects them)
+rm -rf "${CLEAN_ROOT}/var/cache/dnf"/*
 
 # Clear tmpfs-backed runtime directories without deleting the directories
 # themselves. Buildah may have bind mounts in these paths during RUN, so

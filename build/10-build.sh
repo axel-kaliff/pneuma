@@ -129,6 +129,7 @@ make -C /tmp/keyd install PREFIX=/usr
 install -Dm644 /tmp/keyd/keyd.service /usr/lib/systemd/system/keyd.service
 rm -rf /tmp/keyd
 install -Dm644 /ctx/build/files/etc/keyd/default.conf /etc/keyd/default.conf
+install -Dm644 /ctx/build/files/usr/lib/sysusers.d/pneuma-keyd.conf /usr/lib/sysusers.d/pneuma-keyd.conf
 systemctl enable keyd.service
 
 echo "::endgroup::"
