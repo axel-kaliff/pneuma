@@ -23,7 +23,7 @@ rpm -qa --qf '%{NAME}\n' | sort -u >"${BEFORE_LIST}"
 
 # renovate: datasource=github-tags depName=wmww/gtk4-layer-shell
 GTK4_LAYER_SHELL_VERSION="v1.3.0"
-dnf -y install git meson ninja-build gtk4-devel wayland-devel
+dnf -y install git meson ninja-build gtk4-devel wayland-devel wayland-protocols-devel
 git clone --depth 1 --branch "${GTK4_LAYER_SHELL_VERSION}" \
     https://github.com/wmww/gtk4-layer-shell.git /tmp/gtk4-layer-shell
 meson setup /tmp/gtk4-layer-shell/build /tmp/gtk4-layer-shell \
