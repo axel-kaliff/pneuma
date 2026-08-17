@@ -7,14 +7,14 @@ set -eoux pipefail
 ###############################################################################
 # The stack is no longer rpmbuilt in-image. The pinned omedora spec set — plus
 # the EL10 patches that used to live here as build-time seds — is built once
-# per version bump in the axel-kaliff/pneuma COPR (chroot epel-10-x86_64) from
+# per version bump in the akaliff/pneuma COPR (chroot epel-10-x86_64) from
 # the pneuma-el10 branch of github.com/axel-kaliff/omedora (a fork of
 # AndrewGaspar/omedora, the same monorepo the agaspar/omedora-4 Fedora COPR
 # builds from, reusing its .copr/srpm.sh make_srpm machinery and sha256 source
 # pins). This script only enables the repos for one transaction and installs
 # the runtime set — image builds went from ~1-2 h of compiling to a dnf install.
 #
-#   axel-kaliff/pneuma ......... hypr 0.56 stack, quickshell, uwsm, starship,
+#   akaliff/pneuma ......... hypr 0.56 stack, quickshell, uwsm, starship,
 #                                omedora(+settings), keyd, muParser, and
 #                                libxkbcommon >= 1.11 (CS10 ships 1.7 — the
 #                                single remaining base-lib override; drop it
@@ -32,7 +32,7 @@ set -eoux pipefail
 #     && git push  →  COPR rebuilds (webhook)  →  rebuild this image.
 ###############################################################################
 
-PNEUMA_REPOFILE=/etc/yum.repos.d/_copr-axel-kaliff-pneuma.repo
+PNEUMA_REPOFILE=/etc/yum.repos.d/_copr-akaliff-pneuma.repo
 YS_REPOFILE=/etc/yum.repos.d/_copr-yselkowitz-wlroots-epel.repo
 
 cleanup_repos() {
@@ -41,13 +41,13 @@ cleanup_repos() {
 trap cleanup_repos EXIT
 
 cat >"${PNEUMA_REPOFILE}" <<'EOF'
-[copr-axel-kaliff-pneuma]
-name=Copr repo for axel-kaliff/pneuma (epel-10)
-baseurl=https://download.copr.fedorainfracloud.org/results/axel-kaliff/pneuma/epel-10-$basearch/
+[copr-akaliff-pneuma]
+name=Copr repo for akaliff/pneuma (epel-10)
+baseurl=https://download.copr.fedorainfracloud.org/results/akaliff/pneuma/epel-10-$basearch/
 type=rpm-md
 skip_if_unavailable=False
 gpgcheck=1
-gpgkey=https://download.copr.fedorainfracloud.org/results/axel-kaliff/pneuma/pubkey.gpg
+gpgkey=https://download.copr.fedorainfracloud.org/results/akaliff/pneuma/pubkey.gpg
 repo_gpgcheck=0
 enabled=1
 EOF

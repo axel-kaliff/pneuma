@@ -114,7 +114,7 @@ echo "::group:: Keyboard Remapping (keyd)"
 
 # keyd: system-wide key remapping at the evdev layer — applies in Hyprland,
 # GNOME, and virtual consoles alike. Not packaged for EL10 anywhere upstream,
-# so it's built in the axel-kaliff/pneuma COPR (spec vendored in the omedora
+# so it's built in the akaliff/pneuma COPR (spec vendored in the omedora
 # fork — see build/36 header for the spec-source flow). The RPM ships the
 # systemd unit and a keyd-group sysusers.d entry, replacing the from-source
 # compile and the pneuma-keyd.conf sysusers file this script used to install.
@@ -122,7 +122,7 @@ echo "::group:: Keyboard Remapping (keyd)"
 # persist via ostree 3-way merge).
 # shellcheck source=/dev/null
 source /ctx/build/copr-helpers.sh
-copr_install_isolated "axel-kaliff/pneuma" keyd
+copr_install_isolated "akaliff/pneuma" keyd
 install -Dm644 /ctx/build/files/etc/keyd/default.conf /etc/keyd/default.conf
 systemctl enable keyd.service
 

@@ -78,7 +78,7 @@ jobs:
         run: |
           podman run --rm ghcr.io/ublue-os/bluefin-dx:lts-hwe bash -c '
             set -euo pipefail
-            for repo in axel-kaliff/pneuma yselkowitz/wlroots-epel; do
+            for repo in akaliff/pneuma yselkowitz/wlroots-epel; do
               id="copr-${repo//\//-}"
               printf "%s\n" \
                 "[${id}]" \

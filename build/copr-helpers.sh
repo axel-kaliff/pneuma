@@ -13,7 +13,7 @@ set -euo pipefail
 
 # copr_install_isolated "owner/project" pkg... [-- chroot]
 # Default chroot: epel-10 (the CS10+EPEL+CRB buildroot family; matches the
-# axel-kaliff/pneuma and yselkowitz COPRs). Override with COPR_CHROOT for a
+# akaliff/pneuma and yselkowitz COPRs). Override with COPR_CHROOT for a
 # project that only publishes a differently-named chroot.
 copr_install_isolated() {
 	local copr_name="$1"

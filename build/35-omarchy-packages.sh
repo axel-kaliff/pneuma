@@ -8,7 +8,7 @@ set -eoux pipefail
 # First of three omarchy scripts:
 #   35: everything Omarchy needs that c10s/EPEL10 already carry (this)
 #   36: the omedora payload + Hyprland 0.56 stack, prebuilt RPMs from the
-#       axel-kaliff/pneuma COPR + yselkowitz/wlroots-epel
+#       akaliff/pneuma COPR + yselkowitz/wlroots-epel
 #   37: SDDM/session/skel configuration + smoke checks
 #
 # Deviations from the lateralus (Fedora 44) package set, forced by EL10
