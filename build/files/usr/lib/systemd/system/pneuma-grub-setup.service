@@ -1,0 +1,13 @@
+[Unit]
+Description=Install Pneuma GRUB theme
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/pneuma-grub-setup
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

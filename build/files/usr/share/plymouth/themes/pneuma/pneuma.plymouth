@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Pneuma
+Description=Pneuma Breath — a breathing core with rippling breath-waves
+ModuleName=script
+
+[script]
+ScriptFile=/usr/share/plymouth/themes/pneuma/pneuma.script
+ImageDir=/usr/share/plymouth/themes/pneuma/

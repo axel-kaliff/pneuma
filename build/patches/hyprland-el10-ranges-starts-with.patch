@@ -1,0 +1,13 @@
+--- a/src/helpers/MiscFunctions.cpp
++++ b/src/helpers/MiscFunctions.cpp
+@@ -838,7 +838,9 @@
+     });
+ 
+     return [&](auto&&... prefixes) -> bool {
+-        return (... || std::ranges::starts_with(str_view, prefixes));
++        // EL10: libstdc++ 15 lacks ranges::starts_with (GCC 16 feature);
++        // ranges::mismatch has identical prefix semantics here.
++        return (... || (std::ranges::mismatch(str_view, prefixes).in2 == std::ranges::end(prefixes)));
+     }("true"sv, "yes"sv, "on"sv);
+     // clang-format on
+ }

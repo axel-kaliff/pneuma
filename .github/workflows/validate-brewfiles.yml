@@ -1,0 +1,53 @@
+name: Validate Brewfiles
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - "custom/brew/**"
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@8f3d1ec8a696b3b9d9a6c3696b6c73033cab69e4 # master
+
+      - name: Validate Brewfiles
+        shell: bash
+        run: |
+          echo "Validating Brewfiles in custom/brew/ directory..."
+
+          # 'brew bundle check' tests what is installed on the runner (always
+          # nothing in CI); instead parse each Brewfile and resolve every
+          # formula name against the Homebrew API. Comment-only template
+          # files (development, fonts) are valid.
+          validate() {
+            local brewfile=$1 listing
+            if ! listing=$(brew bundle list --file="$brewfile" --formula 2>&1); then
+              echo "✗ $brewfile failed to parse:"
+              echo "$listing"
+              return 1
+            fi
+            mapfile -t formulae <<< "$listing"
+            if [[ -z "${formulae[0]}" ]]; then
+              echo "✓ $brewfile is valid (no active entries)"
+              return 0
+            fi
+            if ! brew info --formula "${formulae[@]}" > /dev/null; then
+              echo "✗ $brewfile references unknown formulae"
+              return 1
+            fi
+            echo "✓ $brewfile is valid (${#formulae[@]} formulae)"
+          }
+
+          status=0
+          while IFS= read -r -d '' brewfile ; do
+            echo "::group:: ===$(basename "$brewfile")==="
+            validate "$brewfile" || status=1
+            echo "::endgroup::"
+          done < <(find "custom/brew" -iname '*\.Brewfile*' -print0)
+          exit "$status"

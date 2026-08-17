@@ -1,0 +1,141 @@
+#!/usr/bin/bash
+# Deploy pneuma dotfiles (via stow) for all human users
+# Runs as a system service after rebase — version-aware so it re-applies when the image changes
+set -eou pipefail
+
+DOTFILES_SRC="/usr/share/pneuma/dotfiles"
+HOMEBREW_PREFIX="/home/linuxbrew/.linuxbrew"
+
+# Get the current image version to detect rebases/upgrades
+# Source os-release which is always present; OSTREE_VERSION includes the build date
+# so it changes on every image update (e.g. "43.20260301.0")
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    IMAGE_VERSION="${OSTREE_VERSION:-${VERSION_ID:-unknown}}"
+else
+    IMAGE_VERSION="unknown"
+fi
+IMAGE_ID="pneuma-${IMAGE_VERSION}"
+
+setup_user() {
+    local user="$1"
+    local home="$2"
+    local stamp="${home}/.config/.pneuma-setup-done"
+    local dotfiles_dest="${home}/dotfiles"
+
+    # Skip if this exact image version was already applied
+    if [ -f "$stamp" ] && [ "$(cat "$stamp")" = "$IMAGE_ID" ]; then
+        echo "  User ${user}: already set up for ${IMAGE_ID}, skipping."
+        return
+    fi
+
+    echo "  Setting up user ${user} for ${IMAGE_ID}..."
+
+    # Deploy dotfiles to user's home
+    if [ -d "$DOTFILES_SRC" ]; then
+        if [ -d "${dotfiles_dest}/.git" ]; then
+            # User manages their own dotfiles clone — don't overwrite with stale
+            # build-time snapshot. Their auto-sync / manual pulls are the source
+            # of truth. Just re-stow below.
+            echo "    User has own dotfiles git clone, skipping file copy."
+        else
+            # First install or user removed their clone — seed from the image
+            rm -rf "${dotfiles_dest}"
+            cp -a "${DOTFILES_SRC}" "${dotfiles_dest}"
+            chown -R "${user}:${user}" "${dotfiles_dest}"
+        fi
+    else
+        echo "    WARNING: ${DOTFILES_SRC} not found, skipping dotfiles deploy."
+        return
+    fi
+
+    mkdir -p "${home}/.config"
+
+    # Fix PERL5LIB for stow — brew's stow hardcodes a perl version that drifts on upgrade
+    local perl5lib
+    perl5lib=$(find "${HOMEBREW_PREFIX}/Cellar/stow" -name 'Stow.pm' -print -quit 2>/dev/null | sed 's|/Stow.pm||' || true)
+
+    local stow_cmd="${HOMEBREW_PREFIX}/bin/stow"
+    if [ ! -x "$stow_cmd" ]; then
+        echo "    WARNING: stow not found at ${stow_cmd}, skipping dotfiles stow."
+        return
+    fi
+
+    # Back up and remove existing files/symlinks that would conflict with stow.
+    # Stow refuses to overwrite files it doesn't own, so we clean first.
+    # Non-symlink files are backed up before removal so user customizations aren't lost.
+    local backup_dir="${home}/.config/.pneuma-backup/${IMAGE_ID}"
+
+    remove_stow_conflicts() {
+        local stow_dir="$1"   # directory containing the stow package
+        local package="$2"    # package name
+        local target="$3"     # stow target directory
+        local pkg_dir="${stow_dir}/${package}"
+
+        if [ -d "$pkg_dir" ]; then
+            find "$pkg_dir" -type f -o -type l | while read -r src_file; do
+                local rel="${src_file#${pkg_dir}/}"
+                local dest="${target}/${rel}"
+                if [ -e "$dest" ] && [ ! -L "$dest" ]; then
+                    # Back up real files (not symlinks from previous stow runs)
+                    local backup_path="${backup_dir}/${rel}"
+                    mkdir -p "$(dirname "$backup_path")"
+                    cp -a "$dest" "$backup_path"
+                fi
+                if [ -e "$dest" ] || [ -L "$dest" ]; then
+                    rm -f "$dest"
+                fi
+            done
+        fi
+    }
+
+    # Helper: run stow as the user, forcing bash shell (fish doesn't support VAR=x cmd syntax)
+    run_stow() {
+        local stow_dir="$1"
+        local target="$2"
+        local package="$3"
+        su -s /bin/bash - "$user" -c \
+            "PERL5LIB='${perl5lib}' ${stow_cmd} -d '${stow_dir}' -t '${target}' --restow '${package}'" 2>&1
+    }
+
+    # Main dotfiles → ~/.config/
+    # The .stow-local-ignore in the dotfiles repo excludes bash, claude, Brewfile, etc.
+    remove_stow_conflicts "${home}" "dotfiles" "${home}/.config"
+    run_stow "${home}" "${home}/.config" "dotfiles" || \
+        echo "    WARNING: main dotfiles stow had errors"
+    echo "    Stowed dotfiles → ~/.config/"
+
+    # bash package → ~/
+    remove_stow_conflicts "${dotfiles_dest}" "bash" "${home}"
+    run_stow "${dotfiles_dest}" "${home}" "bash" || \
+        echo "    WARNING: bash stow had errors"
+    echo "    Stowed bash → ~/"
+
+    # claude package → ~/
+    remove_stow_conflicts "${dotfiles_dest}" "claude" "${home}"
+    run_stow "${dotfiles_dest}" "${home}" "claude" || \
+        echo "    WARNING: claude stow had errors"
+    echo "    Stowed claude → ~/"
+
+    # Record which image version we set up
+    mkdir -p "$(dirname "$stamp")"
+    echo "$IMAGE_ID" > "$stamp"
+    chown "${user}:${user}" "$stamp"
+    echo "  User ${user} setup complete."
+}
+
+echo "Pneuma user setup (image: ${IMAGE_ID})"
+
+# Iterate all human users (UID >= 1000, with a real home directory)
+while IFS=: read -r user _ uid _ _ home shell; do
+    # Skip system users and nologin accounts
+    [ "$uid" -lt 1000 ] 2>/dev/null && continue
+    [ "$uid" -ge 65000 ] 2>/dev/null && continue
+    [ ! -d "$home" ] && continue
+    # Skip the linuxbrew user
+    [ "$user" = "linuxbrew" ] && continue
+
+    setup_user "$user" "$home"
+done < /etc/passwd
+
+echo "All users processed."

@@ -1,0 +1,14 @@
+[Unit]
+Description=Ensure the SDDM greeter user has GPU group memberships
+Before=display-manager.service
+After=local-fs.target systemd-sysusers.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/pneuma-greeter-groups
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=graphical.target

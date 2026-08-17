@@ -1,0 +1,3 @@
+# Flatpaks are installed by the base's flatpak-preinstall.service from a
+# preinstall file generated out of install.list at image build
+# See custom/flatpaks/install.list for the full list

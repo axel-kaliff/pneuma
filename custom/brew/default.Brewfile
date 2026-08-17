@@ -1,0 +1,93 @@
+# Canonical Brewfile — installed at first login by the base's brew-preinstall service
+# Edit this file to add/remove packages; changes apply on next image rebase
+
+# CLI tools (from dotfiles)
+brew "fish"
+brew "bat"
+brew "delta"
+brew "devcontainer"
+brew "direnv"
+brew "dua-cli"
+brew "dust"
+brew "dysk"
+brew "eza"
+brew "fd"
+brew "gh"
+brew "glab"
+brew "go"
+brew "just"
+brew "yt-dlp"
+brew "lazygit"
+brew "luarocks"
+brew "neovim"
+brew "node"
+brew "ripgrep"
+brew "ruff"
+brew "shellcheck"
+brew "tealdeer"
+brew "topgrade"
+brew "trash-cli"
+brew "ugrep"
+brew "uv"
+brew "yazi"
+brew "yq"
+brew "zellij"
+brew "zoxide"
+brew "atuin"
+brew "stow"
+
+# Dev tools (nvim LSP/lint/format dependencies)
+brew "rust-analyzer"
+brew "pyright"
+brew "stylua"
+brew "luacheck"
+brew "markdownlint-cli"
+brew "tree-sitter"
+
+# AI/LLM
+brew "ollama"
+brew "aider"
+
+# Container tools
+brew "dive"
+brew "podman-compose"
+brew "skopeo"
+brew "lazydocker"
+
+# Network tools
+brew "nmap"
+brew "bandwhich"
+brew "trippy"
+brew "doggo"
+
+# Modern CLI replacements
+# NOTE: jq, gum, fzf, starship are RPMs in the image (omarchy scripts and the
+# first-login shell need them before first-boot brew finishes) — keep them
+# out of this Brewfile so there is one source of truth.
+brew "sd"
+brew "procs"
+brew "xh"
+brew "jnv"
+brew "watchexec"
+brew "vhs"
+
+# Terminal productivity
+brew "glow"
+brew "slides"
+brew "hyperfine"
+brew "tokei"
+brew "bottom"
+
+# Developer workflow
+brew "mise"
+
+# File sync/backup
+brew "restic"
+brew "rclone"
+
+# Security
+brew "age"
+brew "sops"
+
+# System tools
+brew "distrobox"
