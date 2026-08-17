@@ -221,7 +221,7 @@ echo "::endgroup::"
 echo "::group:: Record Manifest + Smoke Checks"
 
 # Manifest for supportability — record exactly what each build shipped (the
-# rpmbuilt stack is pinned, but the alonid backports and EPEL packages drift).
+# COPR stack is pinned, but the yselkowitz and EPEL packages drift).
 rpm -qa --qf '%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}\n' \
     'omedora*' 'hypr*' 'quickshell*' 'uwsm*' 'sddm*' chromium kitty starship libinput libxkbcommon | sort \
     > /usr/share/pneuma/omarchy-build-manifest.txt
