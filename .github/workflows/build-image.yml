@@ -46,7 +46,12 @@ env:
   DEFAULT_TAG: "stable"
   PRODUCTION_BRANCH: "stable" # The branch that publishes :stable production images
   REGISTRY_CACHE_WRITE: ${{ github.event_name != 'pull_request' && '1' || '0' }}
-  ENABLE_RECHUNKING: "false"
+  # Rechunking is REQUIRED here, not an optimization: GHCR enforces a 10-minute
+  # timeout per blob upload, and this image's monolithic build layer blows past
+  # it (first push died at 9m58s with an HTML 400 from GitHub's front end).
+  # Chunkah splits the image into <=128 small pre-compressed layers so no
+  # single upload approaches the limit — and OTA deltas shrink as a bonus.
+  ENABLE_RECHUNKING: "true"
   RECHUNK_MAX_LAYERS: "128"
 
 concurrency:
