@@ -302,12 +302,7 @@ jobs:
           echo "--- can sudo exec at all here? ---"
           sudo true && echo "sudo OK" || echo "sudo FAILED rc=$?"
 
-      # continue-on-error is TEMPORARY: it lets the pipeline publish the
-      # un-rechunked image so :stable-testing stops being stale, and tells us
-      # whether the 10-minute GHCR blob cap (the reason rechunking exists) is
-      # still hit with the current layer layout.
       - name: Rechunk image
-        continue-on-error: true
         if: env.ENABLE_RECHUNKING == 'true' && github.event_name != 'pull_request'
         id: rechunk-image
         uses: projectbluefin/actions/bootc-build/chunka@8906e13e3ac1654504e75ad27440bffb28e52fbc # v1
