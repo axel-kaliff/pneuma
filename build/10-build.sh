@@ -14,16 +14,23 @@ set -euo pipefail
 # Enable nullglob for all glob operations to prevent failures on empty matches
 shopt -s nullglob
 
-echo "::group:: RPMDB Copy-Up"
+echo "::group:: Rebuild RPMDB"
 
-# rpm's sqlite database uses mmap; when the db still lives in an overlayfs
-# lower layer, the first dnf write yields "database disk image is malformed".
-# Force a full copy-up of the db directory before any transaction. This RUN
-# layer executes every numbered build script, so one copy-up covers them all.
-RPMDB_DIR="$(rpm --eval '%_dbpath')"
-cp -a "${RPMDB_DIR}" "${RPMDB_DIR}.copyup"
-rm -rf "${RPMDB_DIR}"
-mv "${RPMDB_DIR}.copyup" "${RPMDB_DIR}"
+# The base image's sqlite rpmdb is written by the (newer) rpm/sqlite of its
+# Fedora build runners; c10s rpm 4.19 then fails index SELECTs with
+# "database disk image is malformed" on the first dnf transaction check.
+# Rewrite the db with this OS's own rpm. rpm --rebuilddb's final rename can
+# fail on overlayfs ("failed to replace old database") — fall back to
+# swapping the rebuilt files in manually. This RUN layer executes every
+# numbered build script, so one rebuild covers them all.
+RPMDB_DIR="$(readlink -f "$(rpm --eval '%_dbpath')")"
+if ! rpm --rebuilddb; then
+    latest="$(find "$(dirname "${RPMDB_DIR}")" -maxdepth 1 -name 'rpmrebuilddb.*' | sort | tail -n1)"
+    test -n "${latest}"
+    rm -f "${RPMDB_DIR}"/rpmdb.sqlite*
+    cp -f "${latest}"/* "${RPMDB_DIR}"/
+    rm -rf "${latest}"
+fi
 rpm -q bash >/dev/null
 
 echo "::endgroup::"
