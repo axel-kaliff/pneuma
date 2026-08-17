@@ -18,7 +18,7 @@ echo "::group:: Build gtk4-layer-shell from Source"
 # Snapshot the package set: build deps are removed afterwards by name diff
 # with --noautoremove. Removing base-image packages (e.g. gettext, pkgconf)
 # by name cascade-removes their dependents — gnome-shell/GDM among them.
-BEFORE_LIST=/tmp/ghostty-packages-before.txt
+BEFORE_LIST=/tmp/pneuma-pkgs-before.txt
 rpm -qa --qf '%{NAME}\n' | sort -u >"${BEFORE_LIST}"
 
 # renovate: datasource=github-tags depName=wmww/gtk4-layer-shell
@@ -78,13 +78,13 @@ rm -rf /tmp/zig-* /tmp/ghostty-* /tmp/.cache
 # Remove ONLY what this script added (snapshot diff), without dependency
 # autoremoval — cascades through pre-existing packages are exactly how a
 # devel cleanup deletes GNOME. Then assert the desktop survived.
-AFTER_LIST=/tmp/ghostty-packages-after.txt
+AFTER_LIST=/tmp/pneuma-pkgs-after.txt
 rpm -qa --qf '%{NAME}\n' | sort -u >"${AFTER_LIST}"
-comm -13 "${BEFORE_LIST}" "${AFTER_LIST}" >/tmp/ghostty-packages-added.txt
-if [ -s /tmp/ghostty-packages-added.txt ]; then
-    xargs -a /tmp/ghostty-packages-added.txt dnf -y remove --noautoremove
+comm -13 "${BEFORE_LIST}" "${AFTER_LIST}" >/tmp/pneuma-pkgs-added.txt
+if [ -s /tmp/pneuma-pkgs-added.txt ]; then
+    xargs -a /tmp/pneuma-pkgs-added.txt dnf -y remove --noautoremove
 fi
-rm -f "${BEFORE_LIST}" "${AFTER_LIST}" /tmp/ghostty-packages-added.txt
+rm -f "${BEFORE_LIST}" "${AFTER_LIST}" /tmp/pneuma-pkgs-added.txt
 rpm -q gtk4 libadwaita gnome-shell gdm gettext
 rm -rf /usr/include/gtk4-layer-shell /usr/lib64/pkgconfig/gtk4-layer-shell-0.pc
 test -e /usr/lib64/libgtk4-layer-shell.so.0
