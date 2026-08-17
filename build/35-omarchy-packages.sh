@@ -6,13 +6,16 @@ set -eoux pipefail
 # Omarchy v4 "Quattro" — distro packages (CentOS Stream 10 / EPEL 10 / COPR)
 ###############################################################################
 # First of three omarchy scripts:
-#   35: everything Omarchy needs that c10s/EPEL10/COPR already carry (this)
-#   36: the omedora payload + Hyprland 0.56 stack, rpmbuilt from pinned specs
+#   35: everything Omarchy needs that c10s/EPEL10 already carry (this)
+#   36: the omedora payload + Hyprland 0.56 stack, prebuilt RPMs from the
+#       axel-kaliff/pneuma COPR + yselkowitz/wlroots-epel
 #   37: SDDM/session/skel configuration + smoke checks
 #
 # Deviations from the lateralus (Fedora 44) package set, forced by EL10
 # availability — all cosmetic or shimmed:
-#   foot            -> kitty is the fallback terminal (Ghostty stays default)
+#   foot            -> from yselkowitz/wlroots-epel in script 36 (omedora's
+#                      Requires stays unpatched; kitty stays the visible
+#                      fallback terminal, Ghostty stays default)
 #   pamixer         -> omarchy v4 audio flows use wireplumber's wpctl (in base)
 #   yt-dlp          -> brew (custom/brew/default.Brewfile)
 #   mpv-mpris, imv, sushi, udiskie, yaru-icon-theme -> dropped (papercuts only;
@@ -20,13 +23,9 @@ set -eoux pipefail
 #   fcitx5*         -> dropped (not in EL10; its environment.d file would also
 #                      poison GNOME's ibus — see script 37)
 #   bluez-tools     -> dropped (bt-agent user unit removed in 37)
-#   wtype, brightnessctl -> built from source in script 36
-#   starship        -> rpmbuilt in script 36 (binary repackage spec)
+#   wtype, brightnessctl, grim, slurp -> yselkowitz/wlroots-epel in script 36
+#   starship        -> pneuma COPR in script 36
 ###############################################################################
-
-# Source helper functions
-# shellcheck source=/dev/null
-source /ctx/build/copr-helpers.sh
 
 echo "::group:: Install Official-Repo Packages for Omarchy"
 
@@ -78,18 +77,6 @@ dnf -y install \
     google-noto-naskh-arabic-fonts \
     google-noto-nastaliq-urdu-fonts \
     chromium
-
-echo "::endgroup::"
-
-echo "::group:: Install Screenshot Tools from COPR (isolated)"
-
-# alonid/hyprland (rhel+epel-10) carries the wlroots-adjacent leaf tools EL10
-# lacks. The Hyprland compositor itself is NOT taken from this COPR — its
-# current hyprland-git predates the 0.56 configs the omarchy v4 payload needs,
-# so script 36 builds the pinned 0.56 stack from the omedora specs instead.
-copr_install_isolated "alonid/hyprland" \
-    grim \
-    slurp
 
 echo "::endgroup::"
 

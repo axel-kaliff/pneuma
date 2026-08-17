@@ -5,14 +5,16 @@ set -euo pipefail
 # COPR Helper Functions (CentOS Stream 10 / EPEL 10)
 ###############################################################################
 # dnf4's copr plugin guesses the chroot from the running OS and fails when a
-# COPR only carries a differently-named chroot (e.g. alonid/hyprland publishes
-# rhel+epel-10, not centos-stream-10). Write the repo file explicitly instead,
+# COPR only carries a differently-named chroot (CS10 guesses centos-stream-10;
+# our COPRs publish epel-10). Write the repo file explicitly instead,
 # keeping the enable -> install -> remove isolation semantics: no COPR repo
 # ever persists into the image.
 ###############################################################################
 
 # copr_install_isolated "owner/project" pkg... [-- chroot]
-# Default chroot: rhel+epel-10 (works on CentOS Stream 10 via EPEL 10 ABI).
+# Default chroot: epel-10 (the CS10+EPEL+CRB buildroot family; matches the
+# axel-kaliff/pneuma and yselkowitz COPRs). Override with COPR_CHROOT for a
+# project that only publishes a differently-named chroot.
 copr_install_isolated() {
 	local copr_name="$1"
 	shift
@@ -23,7 +25,7 @@ copr_install_isolated() {
 		return 1
 	fi
 
-	local chroot="${COPR_CHROOT:-rhel+epel-10}"
+	local chroot="${COPR_CHROOT:-epel-10}"
 	local repo_id="copr-${copr_name//\//-}"
 	local repofile="/etc/yum.repos.d/_${repo_id}.repo"
 	local results_url="https://download.copr.fedorainfracloud.org/results/${copr_name}/${chroot}-\$basearch"

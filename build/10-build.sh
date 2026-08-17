@@ -113,23 +113,17 @@ echo "::endgroup::"
 echo "::group:: Keyboard Remapping (keyd)"
 
 # keyd: system-wide key remapping at the evdev layer — applies in Hyprland,
-# GNOME, and virtual consoles alike. Not packaged for EL10 (the community COPR
-# has no epel-10 chroot), so build the small C daemon from a pinned tag.
+# GNOME, and virtual consoles alike. Not packaged for EL10 anywhere upstream,
+# so it's built in the axel-kaliff/pneuma COPR (spec vendored in the omedora
+# fork — see build/36 header for the spec-source flow). The RPM ships the
+# systemd unit and a keyd-group sysusers.d entry, replacing the from-source
+# compile and the pneuma-keyd.conf sysusers file this script used to install.
 # Config ships in /etc (keyd only reads /etc/keyd/; build-time /etc files
 # persist via ostree 3-way merge).
-# renovate: datasource=github-tags depName=rvaiya/keyd
-KEYD_VERSION="v2.5.0"
-git clone --depth 1 --branch "${KEYD_VERSION}" https://github.com/rvaiya/keyd.git /tmp/keyd
-# PREFIX must be set at compile time too (DATA_DIR is baked into the binary
-# and keyd.service is generated from it during `make all`)
-make -C /tmp/keyd PREFIX=/usr
-make -C /tmp/keyd install PREFIX=/usr
-# The Makefile only installs the unit when systemd is *running* — never true
-# inside a container build — so install the generated unit explicitly.
-install -Dm644 /tmp/keyd/keyd.service /usr/lib/systemd/system/keyd.service
-rm -rf /tmp/keyd
+# shellcheck source=/dev/null
+source /ctx/build/copr-helpers.sh
+copr_install_isolated "axel-kaliff/pneuma" keyd
 install -Dm644 /ctx/build/files/etc/keyd/default.conf /etc/keyd/default.conf
-install -Dm644 /ctx/build/files/usr/lib/sysusers.d/pneuma-keyd.conf /usr/lib/sysusers.d/pneuma-keyd.conf
 systemctl enable keyd.service
 
 echo "::endgroup::"
