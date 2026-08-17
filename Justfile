@@ -156,6 +156,19 @@ build $target_image=IMAGE_NAME $tag=DEFAULT_TAG:
     LABELS+=("--label" "io.artifacthub.package.deprecated=false")
     LABELS+=("--label" "containers.bootc=1")
 
+    # Drop the base image's stale rechunk metadata. bluefin-dx carries a ~75 KB
+    # dev.hhd.rechunk.info from its own upstream rechunk, and `podman inspect`
+    # emits it three times (Labels, Config.Labels, Annotations). The chunka
+    # action does CHUNKAH_CONFIG_STR="$(sudo podman inspect ...)" and passes the
+    # whole blob as ONE --build-arg, so at ~293 KB it exceeds MAX_ARG_STRLEN
+    # (128 KiB) and buildah dies with "sudo: Argument list too long" — the
+    # intermittent rechunk failure that kept :stable from ever being published.
+    # Clearing both forms takes inspect to ~40 KB. --label alone is not enough:
+    # it leaves the inherited OCI annotation (still ~124 KB) in place. Our own
+    # rechunk regenerates this metadata afterwards.
+    LABELS+=("--label" "dev.hhd.rechunk.info=")
+    LABELS+=("--annotation" "dev.hhd.rechunk.info=")
+
     # Registry layer cache - speeds up rebuilds by reusing unchanged layers from GHCR
     # Cache write (REGISTRY_CACHE_WRITE=1) is set by CI for non-PR builds only
     # PR builds and local builds are read-only to prevent cache poisoning
