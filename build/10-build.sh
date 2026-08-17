@@ -14,6 +14,20 @@ set -euo pipefail
 # Enable nullglob for all glob operations to prevent failures on empty matches
 shopt -s nullglob
 
+echo "::group:: RPMDB Copy-Up"
+
+# rpm's sqlite database uses mmap; when the db still lives in an overlayfs
+# lower layer, the first dnf write yields "database disk image is malformed".
+# Force a full copy-up of the db directory before any transaction. This RUN
+# layer executes every numbered build script, so one copy-up covers them all.
+RPMDB_DIR="$(rpm --eval '%_dbpath')"
+cp -a "${RPMDB_DIR}" "${RPMDB_DIR}.copyup"
+rm -rf "${RPMDB_DIR}"
+mv "${RPMDB_DIR}.copyup" "${RPMDB_DIR}"
+rpm -q bash >/dev/null
+
+echo "::endgroup::"
+
 echo "::group:: Repo State (EPEL + CRB)"
 
 # bluefin-lts pulls from EPEL 10 at build time; assert the repos are available
