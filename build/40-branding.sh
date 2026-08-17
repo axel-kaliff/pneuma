@@ -33,6 +33,13 @@ QUALIFIED_KERNEL="$(find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\n' | s
     --add ostree \
     -f "/lib/modules/${QUALIFIED_KERNEL}/initramfs.img"
 
+# dracut logs a non-fatal `dracut-install: ERROR: installing '/root'` here and
+# still exits 0: /root is a symlink to var/roothome, which bootc only creates at
+# deploy time. Assert on content instead of exit status so a real dracut abort
+# (which would leave the previous initramfs in place) fails the build.
+lsinitrd "/lib/modules/${QUALIFIED_KERNEL}/initramfs.img" \
+    | grep -q 'plymouth/themes/pneuma/pneuma.script'
+
 echo "::endgroup::"
 
 echo "::group:: Install GRUB Theme"
@@ -70,6 +77,16 @@ sed -i 's|^}$|  // Pneuma branding: rename the update entry (default label "Omed
 # SDDM session picker entry
 sed -i 's/^Name=Omedora$/Name=Pneuma/' /usr/share/wayland-sessions/omedora.desktop
 grep -q '^Name=Pneuma$' /usr/share/wayland-sessions/omedora.desktop
+
+# SDDM greeter wordmark. The Omarchy theme draws logo.png (Main.qml) as the
+# only branding on the login screen, so rebranding it is a file swap. Assert
+# the target exists first: a theme rename would otherwise silently leave
+# "OMARCHY" on the most visible screen in the system.
+SDDM_THEME="/usr/share/sddm/themes/omarchy"
+[[ -f "${SDDM_THEME}/logo.png" ]]
+install -Dm644 /ctx/build/files/usr/share/pneuma/branding/sddm-logo.png \
+    "${SDDM_THEME}/logo.png"
+sed -i 's/^Name=Omarchy$/Name=Pneuma/' "${SDDM_THEME}/metadata.desktop"
 
 echo "::endgroup::"
 
