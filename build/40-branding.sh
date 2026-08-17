@@ -37,8 +37,11 @@ QUALIFIED_KERNEL="$(find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\n' | s
 # still exits 0: /root is a symlink to var/roothome, which bootc only creates at
 # deploy time. Assert on content instead of exit status so a real dracut abort
 # (which would leave the previous initramfs in place) fails the build.
-lsinitrd "/lib/modules/${QUALIFIED_KERNEL}/initramfs.img" \
-    | grep -q 'plymouth/themes/pneuma/pneuma.script'
+# Read the listing into a variable rather than piping into `grep -q`: grep
+# exits on the first match, lsinitrd then dies of SIGPIPE (141), and pipefail
+# turns a passing assert into a failed build.
+initramfs_listing="$(lsinitrd "/lib/modules/${QUALIFIED_KERNEL}/initramfs.img")"
+grep -q 'plymouth/themes/pneuma/pneuma.script' <<< "${initramfs_listing}"
 
 echo "::endgroup::"
 

@@ -79,9 +79,9 @@
       "automerge": false
     },
     {
-      "description": "Keep the bluefin-lts base digest fresh immediately",
+      "description": "Keep the base image digest fresh immediately",
       "matchDepNames": [
-        "ghcr.io/projectbluefin/bluefin-lts"
+        "ghcr.io/ublue-os/bluefin-dx"
       ],
       "matchUpdateTypes": [
         "digest",
