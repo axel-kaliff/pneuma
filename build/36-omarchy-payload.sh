@@ -31,7 +31,8 @@ OMEDORA_REPO="https://github.com/AndrewGaspar/omedora.git"
 # hyprland.spec at the same commit.
 OMEDORA_PIN="d671261d4e2bdd1f5bbaf500ee98923b058909c9"
 
-WORK=/tmp/omedora-build
+# /var/tmp, not /tmp: the tmpfs would hold sources + build trees in RAM
+WORK=/var/tmp/omedora-build
 SRC="${WORK}/src"
 COPR_DIR="${SRC}/omedora/packaging/copr"
 TOPDIR="${WORK}/rpmbuild"
@@ -228,7 +229,10 @@ for name in "${SPECS[@]}"; do
     # provides openh264-devel — EPEL's libheif-devel needs pkgconfig(openh264),
     # and EPEL's noopenh264 conflicts with the base's real openh264.
     dnf -y builddep --enablerepo=epel-multimedia "${spec}"
-    PATH="${GCC15_BIN}:${PATH}" rpmbuild --define "_topdir ${TOPDIR}" -bb "${spec}"
+    # _smp_build_ncpus 4: full-width gcc on 8-core hosts peaks past what
+    # 16 GB machines survive alongside the tmpfs and dnf caches
+    PATH="${GCC15_BIN}:${PATH}" rpmbuild --define "_topdir ${TOPDIR}" \
+        --define "_smp_build_ncpus 4" -bb "${spec}"
     # Fold the fresh RPMs into the local repo so the NEXT spec resolves them
     find "${TOPDIR}/RPMS" -name '*.rpm' -exec cp -u {} "${LOCAL_REPO}/" \;
     createrepo_c_refresh

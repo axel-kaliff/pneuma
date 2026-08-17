@@ -25,12 +25,12 @@ rpm -qa --qf '%{NAME}\n' | sort -u >"${BEFORE_LIST}"
 GTK4_LAYER_SHELL_VERSION="v1.3.0"
 dnf -y install git meson ninja-build gtk4-devel wayland-devel wayland-protocols-devel
 git clone --depth 1 --branch "${GTK4_LAYER_SHELL_VERSION}" \
-    https://github.com/wmww/gtk4-layer-shell.git /tmp/gtk4-layer-shell
-meson setup /tmp/gtk4-layer-shell/build /tmp/gtk4-layer-shell \
+    https://github.com/wmww/gtk4-layer-shell.git /var/tmp/gtk4-layer-shell
+meson setup /var/tmp/gtk4-layer-shell/build /var/tmp/gtk4-layer-shell \
     --prefix=/usr --buildtype=release \
     -Dintrospection=false -Dvapi=false -Dsmoke-tests=false
-ninja -C /tmp/gtk4-layer-shell/build install
-rm -rf /tmp/gtk4-layer-shell
+ninja -C /var/tmp/gtk4-layer-shell/build install
+rm -rf /var/tmp/gtk4-layer-shell
 
 echo "::endgroup::"
 
@@ -47,15 +47,18 @@ ZIG_VERSION="0.15.2"
 # GNOME needs them at runtime.
 dnf -y install gtk4-devel libadwaita-devel gettext
 
+# Build under /var/tmp: /tmp is a tmpfs during image builds, so sources and
+# the zig cache would live in RAM — combined with the compile itself that
+# trips systemd-oomd on 16 GB hosts/runners.
 # Fetch Zig compiler (static binary, no install needed)
 curl -fsSL "https://ziglang.org/download/${ZIG_VERSION}/zig-x86_64-linux-${ZIG_VERSION}.tar.xz" \
-    | tar -xJ -C /tmp
-ZIG="/tmp/zig-x86_64-linux-${ZIG_VERSION}/zig"
+    | tar -xJ -C /var/tmp
+ZIG="/var/tmp/zig-x86_64-linux-${ZIG_VERSION}/zig"
 
 # Fetch and build Ghostty
 curl -fsSL "https://release.files.ghostty.org/${GHOSTTY_VERSION}/ghostty-${GHOSTTY_VERSION}.tar.gz" \
-    | tar -xz -C /tmp
-cd "/tmp/ghostty-${GHOSTTY_VERSION}"
+    | tar -xz -C /var/tmp
+cd "/var/tmp/ghostty-${GHOSTTY_VERSION}"
 # -Dcpu=baseline is REQUIRED for an image shipped to other machines: Zig targets the
 # *build* host's native CPU by default, so the binary inherits whatever ISA extensions
 # the GitHub runner happened to have. Runner hardware varies (Intel Ice Lake Xeons carry
@@ -65,7 +68,8 @@ cd "/tmp/ghostty-${GHOSTTY_VERSION}"
 # routine). Ghostty's SIMD hot paths dispatch at runtime via Google Highway, so baseline
 # costs no meaningful performance.
 # Upstream guidance: https://github.com/ghostty-org/ghostty/blob/main/PACKAGING.md
-XDG_CACHE_HOME=/tmp/.cache "${ZIG}" build \
+XDG_CACHE_HOME=/var/tmp/.zig-cache "${ZIG}" build \
+    -j4 \
     -Doptimize=ReleaseFast \
     -Dcpu=baseline \
     -Dversion-string="${GHOSTTY_VERSION}" \
@@ -73,7 +77,7 @@ XDG_CACHE_HOME=/tmp/.cache "${ZIG}" build \
 cd /
 
 # Clean up build artifacts and Zig compiler
-rm -rf /tmp/zig-* /tmp/ghostty-* /tmp/.cache
+rm -rf /var/tmp/zig-* /var/tmp/ghostty-* /var/tmp/.zig-cache
 
 # Remove ONLY what this script added (snapshot diff), without dependency
 # autoremoval — cascades through pre-existing packages are exactly how a
