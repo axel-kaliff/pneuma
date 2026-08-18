@@ -183,6 +183,33 @@ UWSMBREWEOF
 
 echo "::endgroup::"
 
+echo "::group:: SSH Agent for uwsm Sessions"
+
+# The base image's only SSH agent is GNOME's XDG autostart entry
+# (/etc/xdg/autostart/gnome-keyring-ssh.desktop), which is
+# OnlyShowIn=GNOME;Unity;MATE — so a Hyprland session gets no agent at all and
+# SSH_AUTH_SOCK stays unset: passphrases re-prompt on every connection,
+# AddKeysToAgent is a silent no-op, and hosts whose key is only ever offered by
+# the agent fall through to password auth.
+#
+# gcr-ssh-agent.socket (from gcr, pulled in by gnome-keyring in script 35) is
+# the systemd-native replacement: its ExecStartPost exports SSH_AUTH_SOCK into
+# the user manager environment, which uwsm sessions inherit because
+# sockets.target is reached long before graphical-session.target. No desktop
+# condition here — a sockets.target unit starts before uwsm imports
+# XDG_CURRENT_DESKTOP, so ConditionEnvironment (used for the omarchy-* units
+# above) would never match. Harmless under GNOME: gnome-keyring's autostart
+# sets SSH_AUTH_SOCK later in session startup and keeps winning there.
+systemctl --global enable gcr-ssh-agent.socket
+
+# Belt-and-braces against preset re-application on ostree deploys: the base's
+# 99-default-disable.preset is "disable *", which would drop the symlink above.
+cat > /usr/lib/systemd/user-preset/45-pneuma-ssh-agent.preset << 'EOF'
+enable gcr-ssh-agent.socket
+EOF
+
+echo "::endgroup::"
+
 echo "::group:: Install Pneuma Omarchy Integration"
 
 # First-boot per-user config seeding + conditional SDDM autologin
@@ -238,6 +265,10 @@ test -x /usr/bin/wtype
 test -x /usr/bin/brightnessctl
 test -f /usr/share/wayland-sessions/omedora.desktop
 test -f /usr/share/wayland-sessions/hyprland.desktop # omedora.desktop Exec needs it
+# Hyprland sessions have no SSH agent without this (GNOME's keyring autostart
+# is OnlyShowIn=GNOME) — assert both the binary and the global enablement.
+test -x /usr/libexec/gcr-ssh-agent
+test -L /etc/systemd/user/sockets.target.wants/gcr-ssh-agent.socket
 # GNOME must survive as the second session (bluefin-lts base)
 compgen -G '/usr/share/wayland-sessions/gnome*.desktop' > /dev/null
 rpm -q gnome-shell gdm gnome-session-wayland-session gnome-control-center gettext
