@@ -261,6 +261,12 @@ rpm -q --qf '%{VERSION}' hyprland-no-session | grep -qE '^(0\.(5[6-9]|[6-9][0-9]
 [[ "$(find /usr/share/omarchy/migrations -maxdepth 1 -name '*.sh' | wc -l)" -gt 0 ]]
 [[ "$(find /usr/share/omarchy/migrations -maxdepth 1 -name '*.sh' | wc -l)" == \
     "$(find /etc/skel/.local/state/omarchy/migrations -maxdepth 1 -name '*.sh' | wc -l)" ]]
+# EL10 ships wl-clipboard 2.2.1, whose wl-copy has no --sensitive: it exits 1
+# without ever setting the clipboard, so the copy silently does nothing while
+# the caller carries on. Guard the whole class rather than the two commands
+# that hit it -- if an omarchy update trips this, that command needs an
+# override in omarchy-overrides/bin too.
+! grep -lE '^[^#]*wl-copy[^#]*--sensitive' /usr/bin/omarchy-*
 
 echo "::endgroup::"
 
