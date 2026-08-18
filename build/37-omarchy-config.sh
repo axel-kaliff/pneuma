@@ -161,6 +161,24 @@ done
 
 echo "::endgroup::"
 
+echo "::group:: Default Keyboard Layouts (US + Swedish)"
+
+# omedora-settings ships the skel input.lua fully commented; append an active
+# override so every user seeded from skel gets both layouts. Existing users
+# keep their own copy (pneuma-omarchy-user-setup never clobbers).
+cat >> /etc/skel/.config/hypr/input.lua << 'EOF'
+
+-- Pneuma default: US + Swedish layouts, toggle with Left Alt + Right Alt.
+hl.config({
+  input = {
+    kb_layout = "us,se",
+    kb_options = "compose:caps,shift:both_capslock_cancel,grp:alts_toggle",
+  },
+})
+EOF
+
+echo "::endgroup::"
+
 echo "::group:: Brew PATH for uwsm Sessions"
 
 # uwsm recomposes the session environment at login (prepare-env.sh sources
@@ -251,6 +269,7 @@ test -f /usr/share/applications/com.mitchellh.ghostty.desktop # terminal-list ID
 [[ "$(readlink /etc/systemd/system/display-manager.service)" == *sddm.service ]]
 [[ "$(grep -v '^#' /usr/share/xdg-terminal-exec/hyprland-xdg-terminals.list | head -n1)" == "com.mitchellh.ghostty.desktop" ]]
 grep -rqs 'sddm' /usr/lib/sysusers.d/
+grep -q 'kb_layout = "us,se"' /etc/skel/.config/hypr/input.lua
 # No grep -q here: -q exits at first match and fc-list's remaining writes
 # then die with SIGPIPE (exit 141), which pipefail turns into a build failure.
 fc-list | grep -i 'JetBrainsMono Nerd Font' > /dev/null
