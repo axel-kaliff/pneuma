@@ -179,6 +179,37 @@ EOF
 
 echo "::endgroup::"
 
+echo "::group:: Vim-Style Window Navigation"
+
+# Same skel-append pattern as the layouts above: omedora-settings ships
+# bindings.lua fully commented. SUPER + hjkl focuses, + SHIFT swaps. The three
+# defaults that owned those keys move to the same key with ALT added, except
+# SUPER + ALT + K (already the tmux cheatsheet), so the Omarchy keybindings
+# menu takes SHIFT + ALT. Unbinds must precede the rebinds.
+cat >> /etc/skel/.config/hypr/bindings.lua << 'EOF'
+
+-- Pneuma default: vim-style window navigation.
+hl.unbind("SUPER + J") -- was: Toggle window split
+hl.unbind("SUPER + K") -- was: Keybindings
+hl.unbind("SUPER + L") -- was: Toggle workspace layout
+
+o.bind("SUPER + ALT + J", "Toggle window split", hl.dsp.layout("togglesplit"))
+o.bind("SUPER + SHIFT + ALT + K", "Keybindings", "omarchy-menu-keybindings")
+o.bind("SUPER + ALT + L", "Toggle workspace layout", "omarchy-hyprland-workspace-layout-toggle")
+
+o.bind("SUPER + H", "Focus on left window", hl.dsp.focus({ direction = "l" }))
+o.bind("SUPER + J", "Focus on below window", hl.dsp.focus({ direction = "d" }))
+o.bind("SUPER + K", "Focus on above window", hl.dsp.focus({ direction = "u" }))
+o.bind("SUPER + L", "Focus on right window", hl.dsp.focus({ direction = "r" }))
+
+o.bind("SUPER + SHIFT + H", "Swap window to the left", hl.dsp.window.swap({ direction = "l" }))
+o.bind("SUPER + SHIFT + J", "Swap window down", hl.dsp.window.swap({ direction = "d" }))
+o.bind("SUPER + SHIFT + K", "Swap window up", hl.dsp.window.swap({ direction = "u" }))
+o.bind("SUPER + SHIFT + L", "Swap window to the right", hl.dsp.window.swap({ direction = "r" }))
+EOF
+
+echo "::endgroup::"
+
 echo "::group:: Brew PATH for uwsm Sessions"
 
 # uwsm recomposes the session environment at login (prepare-env.sh sources
@@ -270,6 +301,7 @@ test -f /usr/share/applications/com.mitchellh.ghostty.desktop # terminal-list ID
 [[ "$(grep -v '^#' /usr/share/xdg-terminal-exec/hyprland-xdg-terminals.list | head -n1)" == "com.mitchellh.ghostty.desktop" ]]
 grep -rqs 'sddm' /usr/lib/sysusers.d/
 grep -q 'kb_layout = "us,se"' /etc/skel/.config/hypr/input.lua
+grep -q 'o.bind("SUPER + H", "Focus on left window"' /etc/skel/.config/hypr/bindings.lua
 # No grep -q here: -q exits at first match and fc-list's remaining writes
 # then die with SIGPIPE (exit 141), which pipefail turns into a build failure.
 fc-list | grep -i 'JetBrainsMono Nerd Font' > /dev/null
