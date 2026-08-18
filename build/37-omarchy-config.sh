@@ -210,6 +210,24 @@ EOF
 
 echo "::endgroup::"
 
+echo "::group:: Laptop Panel Below External Monitors"
+
+# Same skel-append pattern again. Hyprland resolves eDP-1 first (monitor ID 0),
+# so putting auto-center-down on it leaves nothing to center against and the
+# monitors land side by side. Inverting it works: pin eDP-1 as the anchor and
+# let everything else auto-center above. Both rules reuse the file's own
+# omarchy_monitor_scale local, so omarchy-hyprland-monitor-scaling (which only
+# rewrites that one line) keeps working. Machines with no eDP-1 fall through
+# the second rule; a desktop with several externals stacks them upward.
+cat >> /etc/skel/.config/hypr/monitors.lua << 'EOF'
+
+-- Pneuma default: the laptop panel sits centered below any external monitor.
+hl.monitor({ output = "", mode = "preferred", position = "auto-center-up", scale = omarchy_monitor_scale })
+hl.monitor({ output = "eDP-1", mode = "preferred", position = "0x0", scale = omarchy_monitor_scale })
+EOF
+
+echo "::endgroup::"
+
 echo "::group:: Brew PATH for uwsm Sessions"
 
 # uwsm recomposes the session environment at login (prepare-env.sh sources
@@ -302,6 +320,7 @@ test -f /usr/share/applications/com.mitchellh.ghostty.desktop # terminal-list ID
 grep -rqs 'sddm' /usr/lib/sysusers.d/
 grep -q 'kb_layout = "us,se"' /etc/skel/.config/hypr/input.lua
 grep -q 'o.bind("SUPER + H", "Focus on left window"' /etc/skel/.config/hypr/bindings.lua
+grep -q 'position = "auto-center-up"' /etc/skel/.config/hypr/monitors.lua
 # No grep -q here: -q exits at first match and fc-list's remaining writes
 # then die with SIGPIPE (exit 141), which pipefail turns into a build failure.
 fc-list | grep -i 'JetBrainsMono Nerd Font' > /dev/null
