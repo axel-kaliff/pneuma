@@ -15,6 +15,7 @@ Scripts are named with a number prefix (e.g., `10-build.sh`, `20-onepassword.sh`
 - **`36-omarchy-payload.sh`** - Omedora payload + Hyprland 0.56 stack, rpmbuilt from pinned specs
 - **`37-omarchy-config.sh`** - SDDM/session/skel configuration + smoke checks; makes SDDM the default display manager
 - **`38-omarchy-qml-patches.sh`** - EL10/Qt 6.10 QML source fixes for the omarchy shell (ES3 reserved words used as identifiers); also fixed upstream in the pneuma-el10 omedora fork
+- **`39-pomodoro.sh`** - `pneuma.pomodoro` focus-timer bar plugin seeded into `/etc/skel`
 - **`40-branding.sh`** - Plymouth boot splash and GRUB theme (runs last so the pneuma splash owns the initramfs)
 
 ## Example Scripts
