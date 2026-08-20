@@ -17,12 +17,14 @@ BarWidget {
   // Resolve it once and retry until it exists.
   property var pomo: null
 
+  // Keyed on identity rather than "have we resolved yet": a plugin code reload
+  // builds a fresh service, and a widget that kept the old handle would push
+  // its settings into a dead object and read a frozen countdown.
   function resolveService() {
-    if (pomo) return
     var found = bar && bar.shell && typeof bar.shell.serviceFor === "function"
       ? bar.shell.serviceFor(root.moduleName)
       : null
-    if (!found) return
+    if (!found || found === pomo) return
     pomo = found
     pushSettings()
   }
