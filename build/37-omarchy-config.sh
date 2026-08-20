@@ -95,6 +95,31 @@ install -Dm644 /usr/share/xdg-terminal-exec/hyprland-xdg-terminals.list \
 
 echo "::endgroup::"
 
+echo "::group:: Image Viewer Default (Loupe, not imv)"
+
+# Script 35 drops imv (no EL10 package) and relies on the Loupe flatpak for
+# image viewing, but omedora-settings still seeds an imv.desktop into skel.
+# With no explicit default anywhere, xdg falls back to the mimeinfo.cache
+# association and opens a binary that does not exist -- images silently fail.
+rm -f /etc/skel/.local/share/applications/imv.desktop
+
+# Seed an explicit default so the fallback never gets a vote (same approach as
+# the xdg-terminals.list seed above). Loupe ships in custom/flatpaks/install.list.
+install -dm755 /etc/skel/.config
+cat > /etc/skel/.config/mimeapps.list << 'EOF'
+[Default Applications]
+image/png=org.gnome.Loupe.desktop
+image/jpeg=org.gnome.Loupe.desktop
+image/gif=org.gnome.Loupe.desktop
+image/webp=org.gnome.Loupe.desktop
+image/bmp=org.gnome.Loupe.desktop
+image/tiff=org.gnome.Loupe.desktop
+EOF
+
+test ! -e /etc/skel/.local/share/applications/imv.desktop
+
+echo "::endgroup::"
+
 echo "::group:: Chromium Compat Shims"
 
 # Omarchy scripts hardcode Arch's names (chromium binary, chromium.desktop);
