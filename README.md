@@ -46,8 +46,9 @@ Notes:
 - Existing machines that had the Chromium **flatpak**: it was dropped from the install list in favor of RPM Chromium (webapp support) — remove the old one with `flatpak uninstall org.chromium.Chromium`.
 - To let the Omarchy theme system restyle your **stowed** Ghostty config, add this line to it: `config-file = ?"~/.local/state/omarchy/current/theme/ghostty.conf"`.
 - Update-subsystem overrides live in `/usr/share/pneuma/omarchy-overrides` (`build/files/usr/share/pneuma/omarchy-overrides/bin`) and are installed **over** the RPM's binaries at image build — never patch the RPM payload in place.
+- SSH agent: `gcr-ssh-agent.socket` is enabled for all users, so `SSH_AUTH_SOCK` is set in Hyprland sessions too (GNOME's own agent only autostarts under GNOME). Keys still have to be added once — `ssh-add ~/.ssh/id_ed25519`, or `AddKeysToAgent yes` in `~/.ssh/config`.
 
-_Last updated: 2026-08-17_
+_Last updated: 2026-08-18_
 
 ## Package pipeline (COPR)
 
