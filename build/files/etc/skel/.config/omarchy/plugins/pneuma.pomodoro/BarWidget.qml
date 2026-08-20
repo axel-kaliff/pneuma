@@ -37,6 +37,8 @@ BarWidget {
     pomo.breakMinutes = Model.clampInt(setting("breakMinutes", 5), 5, 1, 180)
     pomo.longBreakMinutes = Model.clampInt(setting("longBreakMinutes", 15), 15, 1, 180)
     pomo.cyclesPerLong = Model.clampInt(setting("cyclesPerLong", 4), 4, 1, 12)
+    pomo.focusEndSound = String(setting("focusEndSound", pomo.defaultFocusEndSound))
+    pomo.breakEndSound = String(setting("breakEndSound", pomo.defaultBreakEndSound))
   }
 
   onBarChanged: resolveService()

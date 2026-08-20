@@ -48,6 +48,21 @@ omarchy bar set pneuma.pomodoro workMinutes 50 --json
 | `breakMinutes` | `5` | Short break length |
 | `longBreakMinutes` | `15` | Long break length |
 | `cyclesPerLong` | `4` | Focus phases before a long break |
+| `focusEndSound` | `service-login.oga` | Chime when a focus phase ends |
+| `breakEndSound` | `string.ogg` | Chime when a break ends |
+
+The two chimes are deliberately different, so the ear tells focus-over from
+break-over without looking at the bar. Both take an absolute path to any file
+`pw-play` can read, and `""` mutes one:
+
+```sh
+omarchy bar set pneuma.pomodoro focusEndSound /usr/share/sounds/freedesktop/stereo/complete.oga
+omarchy bar set pneuma.pomodoro breakEndSound ""
+```
+
+Chimes follow the notification: they fire on a phase running out, not on a
+manual skip, and not when a session that elapsed while the shell was down is
+settled at startup.
 
 ## From scripts and keybindings
 
@@ -60,10 +75,14 @@ omarchy-shell pneuma.pomodoro toggle          # the panel
 instance only — clicking the pill is per-monitor, as with the first-party
 widgets.
 
-## Known gap
+## Dependencies
 
-The phase-change notification calls `omarchy-notification-send`. On Omarchy
-4.0.0.alpha the shell's own notification service fails to load
-(`plugins/notifications/Service.qml` uses `var transient`, and `transient` is a
-reserved word in Qt 6.10's QML parser), so no notification daemon is on the
-bus and the alert is silently dropped. The bar pill still changes phase.
+The phase-change notification calls `omarchy-notification-send`, and the chimes
+call `pw-play`. Both are fire-and-forget: if either is missing the phase still
+changes and the bar still updates.
+
+Omarchy 4.0.0.alpha shipped a notification service that could not load on
+Qt 6.10 (`var transient`, a reserved word), which left the desktop with no
+notification daemon at all. Pneuma patches that in the image build
+(`build/38-omarchy-qml-patches.sh`) and the fix is upstream in the pneuma-el10
+omedora fork.

@@ -75,6 +75,16 @@ done
 # a bar font without them shows tofu. 20-dotfiles.sh installs the font.
 fc-list | grep -i 'JetBrainsMono Nerd Font' > /dev/null
 
+# The phase-end chimes shell out to pw-play with absolute paths. Assert the
+# player and both default sounds ship, rather than shipping a silent timer:
+# the plugin deliberately swallows a failed chime, so nothing would report it.
+#   pw-play              <- pipewire-utils
+#   service-login.oga    <- sound-theme-freedesktop
+#   string.ogg           <- gnome-control-center (asserted in 37)
+test -x /usr/bin/pw-play
+test -f /usr/share/sounds/freedesktop/stereo/service-login.oga
+test -f /usr/share/sounds/gnome/default/alerts/string.ogg
+
 echo "::endgroup::"
 
 echo "Pomodoro bar plugin installed!"

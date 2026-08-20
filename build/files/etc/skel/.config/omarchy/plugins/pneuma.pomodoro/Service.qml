@@ -28,6 +28,15 @@ Item {
   property int longBreakMinutes: 15
   property int cyclesPerLong: 4
 
+  // Phase-end chimes, as absolute paths so any file works, not just the two
+  // sound themes that happen to be installed. Set either to "" to mute it.
+  // Distinct sounds on purpose: the ear should tell focus-over from
+  // break-over without looking at the bar.
+  readonly property string defaultFocusEndSound: "/usr/share/sounds/freedesktop/stereo/service-login.oga"
+  readonly property string defaultBreakEndSound: "/usr/share/sounds/gnome/default/alerts/string.ogg"
+  property string focusEndSound: defaultFocusEndSound
+  property string breakEndSound: defaultBreakEndSound
+
   readonly property var config: ({
     workMinutes: root.workMinutes,
     breakMinutes: root.breakMinutes,
@@ -126,6 +135,14 @@ Item {
   function announce(finished, next) {
     Quickshell.execDetached([notifyBin, "-g", Model.phaseGlyph(next),
                              "Pomodoro", Model.announcement(finished, next, config)])
+    chime(finished === "focus" ? focusEndSound : breakEndSound)
+  }
+
+  // Fire-and-forget: a missing player or a path that no longer exists costs a
+  // silent phase change, never a stuck timer. Only reached from announce(), so
+  // a manual skip and a session restored after the shell was down stay quiet.
+  function chime(soundPath) {
+    if (soundPath !== "") Quickshell.execDetached(["pw-play", soundPath])
   }
 
   // --------------------------------------------------------------- ticking
@@ -248,7 +265,10 @@ Item {
         remaining: root.displayTime,
         remainingMs: Math.round(root.remainingMs),
         completedInCycle: root.completedInCycle,
-        cyclesPerLong: root.cyclesPerLong
+        cyclesPerLong: root.cyclesPerLong,
+        workMinutes: root.workMinutes,
+        breakMinutes: root.breakMinutes,
+        longBreakMinutes: root.longBreakMinutes
       })
     }
   }
