@@ -286,22 +286,6 @@ jobs:
 
       # OPTIONAL: Set ENABLE_RECHUNKING to "true" above to optimize OTA deltas.
       # This uses OCI-native chunkah and does not require bootc-base-imagectl.
-      # TEMPORARY (remove once the rechunk E2BIG below is fixed): every main
-      # build since f788a77 dies in the chunka action with
-      #   /usr/bin/sudo: Argument list too long
-      # on its *first* sudo call (`sudo mktemp -d`, before any output), which
-      # points at an oversized inherited environment rather than the arguments.
-      # Nothing in the step's own env is large, so capture the real numbers.
-      - name: Debug environment size before rechunk
-        if: github.event_name != 'pull_request'
-        shell: bash
-        run: |
-          echo "env bytes: $(env | wc -c)   vars: $(env | wc -l)"
-          echo "--- 12 largest env entries (name + size) ---"
-          env | awk '{print length($0)"\t"substr($0,1,70)}' | sort -rn | head -12
-          echo "--- can sudo exec at all here? ---"
-          sudo true && echo "sudo OK" || echo "sudo FAILED rc=$?"
-
       - name: Rechunk image
         if: env.ENABLE_RECHUNKING == 'true' && github.event_name != 'pull_request'
         id: rechunk-image
