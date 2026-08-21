@@ -37,9 +37,11 @@ links lives in `.agents/skills/README.md`.
 | `main`   | `:stable-testing` | Testers and release candidates |
 | `stable` | `:stable`         | Production systems             |
 
-The promotion release gate verifies cosign signatures on the `:testing` tag;
-enable keyless signing (SETUP_CHECKLIST "Enable Signing") for it to report
-`release/ready`.
+The promotion release gate verifies **keyless** cosign signatures on the
+`:testing` tag — provided by the "Sign and publish (keyless, release gate)"
+step in `build-image.yml` (the key-based `SIGNING_SECRET` signature serves
+bootc host verification and cannot satisfy the gate). It reports
+`release/ready` once a keyless-signed `:testing` image exists.
 
 ## CRITICAL: GitHub API Usage
 
@@ -139,6 +141,6 @@ Before marking work done:
 - [ ] Updated or created the relevant skill file?
 - [ ] Included that learning in this PR?
 
-**Last Updated**: 2026-08-05
+**Last Updated**: 2026-08-21
 **Template Version**: finpilot (Agent UX Overhaul)
 **Maintainer**: Universal Blue Community
