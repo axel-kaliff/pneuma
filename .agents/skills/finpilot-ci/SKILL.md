@@ -55,9 +55,10 @@ description: >-
 - The `Determine image tag` step sets `TAG_STREAM=testing` off the production
   branch; `Finalize branch tags` renames `testing*` tags to `stable-testing-*`
   so they never collide with production `stable-daily*` aliases.
-- The release gate verifies cosign signatures on `:testing`; the `Sign and
-  publish` step in `build-image.yml` provides them, and unsigned images report
-  `release/blocked`.
+- The release gate verifies **keyless** cosign signatures on `:testing`; the
+  `Sign and publish (keyless, release gate)` step in `build-image.yml` provides
+  them — the key-based `SIGNING_SECRET` signature cannot satisfy the gate, and
+  images without a keyless signature report `release/blocked`.
 
 ## Composite Action Pins
 

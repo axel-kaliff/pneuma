@@ -28,6 +28,11 @@ on:
     paths-ignore:
       - "**.md"
       - ".github/workflows/*validate*.yml"
+  schedule:
+    # Weekly rebuild (Mon 05:00 UTC): picks up CS10/EPEL/COPR package updates
+    # even when no commit lands. Cheap now that the omarchy stack comes
+    # prebuilt from COPR instead of being compiled in-image.
+    - cron: "0 5 * * 1"
   workflow_dispatch:
 
 permissions:
@@ -59,6 +64,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Stage-1 gate: full depsolve + download + transaction test of the Omarchy
+  # runtime set inside the real base image (~3 min). Catches COPR repo
+  # breakage, versionlock conflicts, and broken RPMs long before the 30-min
+  # image build does — and on schedule runs, even without any commit.
+  depsolve-check:
+    name: Fast COPR depsolve check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Test-install the Omarchy runtime set against the base image
+        shell: bash
+        run: |
+          podman run --rm ghcr.io/ublue-os/bluefin-dx:lts-hwe bash -c '
+            set -euo pipefail
+            for repo in akaliff/pneuma yselkowitz/wlroots-epel; do
+              id="copr-${repo//\//-}"
+              printf "%s\n" \
+                "[${id}]" \
+                "name=${id}" \
+                "baseurl=https://download.copr.fedorainfracloud.org/results/${repo}/epel-10-\$basearch/" \
+                "gpgcheck=1" \
+                "gpgkey=https://download.copr.fedorainfracloud.org/results/${repo}/pubkey.gpg" \
+                "enabled=1" > "/etc/yum.repos.d/${id}.repo"
+            done
+            dnf -y install --setopt=tsflags=test --enablerepo=epel-multimedia \
+              hyprland hyprland-guiutils hyprpicker hyprsunset \
+              xdg-desktop-portal-hyprland starship omedora libinput \
+              libxkbcommon foot grim slurp wtype brightnessctl keyd
+            echo "depsolve OK"'
+
   build:
     name: Build and push image
     runs-on: ubuntu-24.04
@@ -291,13 +326,35 @@ jobs:
           default-tag: ${{ steps.branch-tags.outputs.default-tag }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Sign and attest (SLSA Build L2 provenance)
-      # Bluefin pattern: keyless OIDC signing via Fulcio.
-      # Requires 'id-token: write' permission (granted above).
-      # Non-fatal — signing failures never block image publishing,
-      # but unsigned images fail the promotion release gate.
+      # Two cosign signatures are attached to each pushed digest — they serve
+      # different verifiers and are not interchangeable:
+      #
+      # 1. Key-based (image-template pattern): the host-side
+      #    containers-policy.json verification (sigstoreSigned + keyPath, the
+      #    ublue precedent) understands it directly; cosign.pub is committed at
+      #    the repo root and later shipped in-image for
+      #    `bootc switch --enforce-container-sigpolicy`.
+      #    --new-bundle-format=false: the old signature format is what
+      #    ostree/bootc host verification reads.
+      - name: Install cosign
+        if: github.event_name != 'pull_request'
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+      - name: Sign container image
+        if: github.event_name != 'pull_request'
+        env:
+          COSIGN_PRIVATE_KEY: ${{ secrets.SIGNING_SECRET }}
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          cosign sign -y --new-bundle-format=false --use-signing-config=false \
+            --key env://COSIGN_PRIVATE_KEY "${IMAGE_REGISTRY}/${IMAGE_NAME}@${DIGEST}"
 
-      - name: Sign and publish
+      # 2. Keyless OIDC via Fulcio (SLSA Build L2 provenance): the factory
+      #    promotion release gate verifies certificate identity against the
+      #    GitHub OIDC issuer — key-based signatures cannot satisfy it, so
+      #    without this step main -> stable promotions report release/blocked.
+      #    Requires 'id-token: write' permission (granted above). Non-fatal —
+      #    keyless signing failures never block image publishing.
+      - name: Sign and publish (keyless, release gate)
         if: github.event_name != 'pull_request'
         continue-on-error: true
         uses: projectbluefin/actions/bootc-build/sign-and-publish@eb4c546389f19ad9e42f1af052623de73c620ebb # v1

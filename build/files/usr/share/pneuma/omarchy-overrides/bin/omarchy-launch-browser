@@ -3,7 +3,7 @@
 # omarchy:summary=Launch the default browser as determined by xdg-settings.
 # omarchy:args=[url]
 #
-# pneuma override (installed over the omedora RPM binary by
+# Pneuma override (installed over the omedora RPM binary by
 # build/37-omarchy-config.sh): GUI apps on pneuma are Flatpaks, but the
 # upstream script only searches {~/.local,~/.nix-profile,/usr}/share for the
 # default browser's desktop entry and execs its first Exec token — both fail

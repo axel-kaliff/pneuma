@@ -35,17 +35,23 @@ FROM scratch AS ctx
 COPY build /build
 COPY custom /custom
 
-# Base Image - Bluefin LTS (CentOS Stream 10, GNOME + GDM)
+# Base Image - Bluefin DX LTS HWE (CentOS Stream 10, GNOME + GDM, docker/dx
+# tooling, Fedora HWE kernel). This is the exact image the target machine
+# (Darter Pro darp11-b) boots today — dx supplies docker and the HWE kernel
+# supplies hardware support the el10 6.12 kernel may lack. Revisit when the
+# projectbluefin org starts publishing dx/hwe variants (as of 2026-08-17 it
+# only publishes the plain image, and ublue-os publishing stalled 2026-07-14
+# amid the org migration — the digest pin documents exactly what was tested).
 # Renovate will keep the digest pin up to date.
-FROM ghcr.io/projectbluefin/bluefin-lts:stable@sha256:727e3f36eede8eca74bdbf76a258743b9b05681c1216232ea5bc54388869efda
+FROM ghcr.io/ublue-os/bluefin-dx:lts-hwe@sha256:5fe156fc76f5a9e754f66aff55a5ba9c9e7ea582efd8717cacda9c37244c77c2
 
 # Image identity - these define how bootc, fastfetch, and the ublue ecosystem
 # recognize your image. Change these to match your project name.
 ARG IMAGE_NAME="pneuma"
 ARG IMAGE_VENDOR="axel-kaliff"
 ARG UBLUE_IMAGE_TAG="stable"
-ARG BASE_IMAGE_NAME="bluefin-lts"
-# Keep in sync with the actual base image above (bluefin-lts:stable is c10s);
+ARG BASE_IMAGE_NAME="bluefin-dx"
+# Keep in sync with the actual base image above (bluefin-dx:lts-hwe is c10s);
 # the Justfile reads this ARG as the source of truth for the version string.
 ARG CENTOS_MAJOR_VERSION="10"
 ARG VERSION=""

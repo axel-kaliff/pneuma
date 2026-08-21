@@ -131,8 +131,9 @@ configuration change — see the update rules in `finpilot-maintain`.
 
 ## Signing
 
-No setup required — first builds publish signed images. Verification details:
-`finpilot-templates`.
+Keyless signing needs no setup; the key-based host signature additionally
+requires the `SIGNING_SECRET` repo secret (public key committed as
+`cosign.pub`). Verification details: `finpilot-templates`.
 
 ## Common Rationalizations
 
@@ -148,7 +149,7 @@ No setup required — first builds publish signed images. Verification details:
 
 - Fork repo still has `finpilot` in any of the 7 locations
 - `RENOVATE_TOKEN` not set but Renovate workflow is enabled (fails silently or errors on first run)
-- `cosign.pub` or `cosign.key` added to the repo
+- `cosign.key` added to the repo (`cosign.pub` is legitimately committed; the private key never is)
 - Auto-merge not enabled, causing Renovate digest PRs to sit unmerged
 - Branch protection missing `validate` as a required check
 - README missing the "What Makes this Raptor Different" section entirely

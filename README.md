@@ -14,9 +14,9 @@ Instead, you create your own OS repository based on this template, allowing full
 
 Pneuma is built on [`ghcr.io/projectbluefin/bluefin-lts`](https://docs.projectbluefin.io/lts/) (CentOS Stream 10 bootc with GNOME, GDM, Homebrew, Flatpak, ujust, and uupd auto-updates) and layers the Omarchy experience on top. It derives from [axel-kaliff/lateralus](https://github.com/axel-kaliff/lateralus) (a finpilot-template image), rebased from Fedora onto Bluefin LTS:
 
-- **Omarchy v4 desktop** (default) — Hyprland + the Quickshell-based Omarchy shell, themes, keybindings, and `omarchy` CLI from the [omedora](https://github.com/AndrewGaspar/omedora) project (MIT Fedora adaptation of [basecamp/omarchy](https://github.com/basecamp/omarchy)). The omedora COPR only builds for Fedora, so pneuma rebuilds the pinned Hyprland 0.56 stack + payload specs from source at image build (`build/36-omarchy-payload.sh`), with EL10 gaps filled from EPEL 10 and the `alonid/hyprland` COPR. See [Omarchy on pneuma](#omarchy-on-pneuma).
+- **Omarchy v4 desktop** (default) — Hyprland + the Quickshell-based Omarchy shell, themes, keybindings, and `omarchy` CLI from the [omedora](https://github.com/AndrewGaspar/omedora) project (MIT Fedora adaptation of [basecamp/omarchy](https://github.com/basecamp/omarchy)). The omedora COPR only builds for Fedora, so pneuma rebuilds the pinned Hyprland 0.56 stack + payload specs for EL10 in the [akaliff/pneuma COPR](https://copr.fedorainfracloud.org/coprs/akaliff/pneuma/) (chroot `epel-10-x86_64`, specs on the [`pneuma-el10` branch](https://github.com/axel-kaliff/omedora/tree/pneuma-el10) of the omedora fork), with leaf Wayland tools from `yselkowitz/wlroots-epel`. Image builds just `dnf install` the prebuilt RPMs (`build/36-omarchy-payload.sh`). See [Omarchy on pneuma](#omarchy-on-pneuma).
 - **GNOME desktop** — vanilla Bluefin LTS GNOME stays installed as a second session; pick it at the login screen or make GDM the greeter again with `ujust omarchy-greeter gnome`.
-- **Ghostty** built from source, the default terminal in both desktops (kitty is the fallback — EL10 has no foot).
+- **Ghostty** built from source, the default terminal in both desktops (kitty is the visible fallback; foot ships from `yselkowitz/wlroots-epel` to satisfy omedora's dependency).
 - **Runtime app delivery**: CLI tools via Homebrew (`custom/brew/default.Brewfile`), GUI apps via Flatpak (`custom/flatpaks/install.list`), both installed by the base image's first-boot services. Exceptions live in the image as RPMs only when they must (compositor stack, portals, script dependencies like `gum`/`jq`/`fzf`/`starship`, and Chromium — Flatpak Chromium breaks Omarchy's per-webapp window classes).
 - **Pneuma branding** — the "Pneuma Breath" Plymouth splash (a breathing core with rippling breath-waves), matching GRUB theme, and os-release identity.
 
@@ -47,7 +47,88 @@ Notes:
 - To let the Omarchy theme system restyle your **stowed** Ghostty config, add this line to it: `config-file = ?"~/.local/state/omarchy/current/theme/ghostty.conf"`.
 - Update-subsystem overrides live in `/usr/share/pneuma/omarchy-overrides` (`build/files/usr/share/pneuma/omarchy-overrides/bin`) and are installed **over** the RPM's binaries at image build — never patch the RPM payload in place.
 
-_Last updated: 2026-08-15_
+_Last updated: 2026-08-17_
+
+## Package pipeline (COPR)
+
+Nothing Hyprland/omarchy-related exists for CentOS Stream 10 in EPEL or any established
+COPR, so pneuma maintains its own package pipeline. **No compiling happens in the image
+build** — `build/36-omarchy-payload.sh` is a single `dnf install` of prebuilt RPMs.
+
+### Where packages come from
+
+| Source | Packages | Notes |
+| --- | --- | --- |
+| [akaliff/pneuma COPR](https://copr.fedorainfracloud.org/coprs/akaliff/pneuma/) (chroot `epel-10-x86_64`) | hyprland 0.56 + the hypr* library chain, xdg-desktop-portal-hyprland, quickshell, uwsm, starship, omedora, omedora-settings, glaze, libxkbcommon ≥ 1.11, muParser, keyd | built from the [`pneuma-el10` branch](https://github.com/axel-kaliff/omedora/tree/pneuma-el10) of the omedora fork |
+| [yselkowitz/wlroots-epel](https://copr.fedorainfracloud.org/coprs/yselkowitz/wlroots-epel/) (`epel-10`) | foot, grim, slurp, wtype, brightnessctl | trusted Fedora maintainer; RPMs baked into the image are the de-facto pin |
+| EPEL 10 / CS10 BaseOS+AppStream+CRB | everything in `build/35-omarchy-packages.sh` | chromium, sddm, mpv, nautilus-python, tesseract, fonts, … |
+
+`libxkbcommon` is the **only base-library override** (CS10 ships 1.7.0; hyprland 0.56
+needs ≥ 1.11 — a soname-stable additive upgrade). CS10 already carries wayland 1.25,
+wayland-protocols 1.49, and libinput ≥ 1.29, which is asserted post-install in
+`build/36-omarchy-payload.sh`. When CS10 rebases libxkbcommon past 1.11, delete the
+package from the COPR and the override disappears.
+
+### How the COPR is fed
+
+Specs live in [`axel-kaliff/omedora`](https://github.com/axel-kaliff/omedora) — a fork of
+[AndrewGaspar/omedora](https://github.com/AndrewGaspar/omedora), the same monorepo the
+`agaspar/omedora-4` Fedora COPR builds from. The branch `pneuma-el10` sits on top of
+upstream's `omedora-4` and carries the EL10 delta as reviewable commits:
+
+- **gcc-toolset-15** (`%if 0%{?rhel} >= 10`) on the C++ specs — the 0.56 stack needs
+  C++26 library features missing from EL10's base gcc 14; the toolset links them
+  statically, so binaries run on the stock runtime
+- **hyprland**: `Patch1` replacing `std::ranges::starts_with` (a GCC 16 library feature)
+  with the equivalent `ranges::mismatch` form
+- **hyprtoolkit**: pkg-config shim for EL10's `iniparser-devel`, which ships no `.pc`
+- **omedora-settings**: section-macro escapes in comments (rpm 4.19 parser bug)
+- **new specs**: `libxkbcommon` (Fedora f43 spec), `muParser` (Fedora spec), `keyd`
+  (vendored; ships its own unit + sysusers)
+
+Every package is a COPR **SCM package** (`make_srpm`) pointing at that branch: COPR runs
+the repo's own `.copr/srpm.sh`, which fetches sources, verifies them against the
+committed sha256 pins (`<spec>.spec.sources`), and vendors Rust deps — all in the online
+SRPM step, so the mock build phase stays offline. Same machinery, same pins as upstream.
+
+### Building / rebuilding the stack
+
+The hypr chain has deep intra-stack BuildRequires, so packages build **one at a time in
+dependency order** (each lands in the project repo before the next resolves against it):
+
+```bash
+cd ~/omedora/omedora/packaging/copr
+PROJECT=pneuma BRANCH=pneuma-el10 \
+CLONE_URL=https://github.com/axel-kaliff/omedora.git \
+  ./copr-submit.sh all \
+    libxkbcommon.spec muParser.spec keyd.spec glaze.spec hyprland-protocols.spec \
+    hyprutils.spec hyprwayland-scanner.spec hyprlang.spec hyprgraphics.spec \
+    hyprwire.spec hyprcursor.spec aquamarine.spec hyprtoolkit.spec hyprland.spec \
+    hyprland-guiutils.spec hyprpicker.spec hyprsunset.spec \
+    xdg-desktop-portal-hyprland.spec uwsm.spec quickshell.spec starship.spec \
+    omedora-settings.spec omedora.spec
+```
+
+(`register` upserts the package definitions, `build` runs them in order, `all` does
+both; a subset of spec names rebuilds just those, still in canonical order.)
+
+### Maintenance loop
+
+1. **Upstream bump** (omedora releases a new wave):
+   `cd ~/omedora && git fetch upstream && git rebase upstream/omedora-4 && git push`
+   — the EL10 commits replay on top; conflicts are rare and spec-local.
+2. **Rebuild** changed packages with `copr-submit.sh build …` (or enable COPR's
+   webhook-rebuild to trigger on push).
+3. **Gate before the image**: the `depsolve-check` CI job (also run weekly by cron)
+   transaction-tests the full runtime set inside the real base image (~3 min), so COPR
+   breakage surfaces before a 30-minute image build fails.
+4. **Rebuild the image** — `build/36-omarchy-payload.sh` installs whatever the COPR
+   serves; the build manifest at `/usr/share/pneuma/omarchy-build-manifest.txt` records
+   exactly what shipped.
+
+Keep the omedora pin and the hyprland version moving in lockstep: the omarchy payload's
+Lua configs must match the hyprland built from the same monorepo commit (the ≥ 0.56
+version guard in `build/37-omarchy-config.sh` enforces the floor at image build).
 
 ## Guided Copilot Mode
 
@@ -105,7 +186,7 @@ Use the `finpilot-maintain` and `finpilot-ci` skills, then:
 - Validates your files on pull requests so you never break a build:
   - Brewfile, Justfile, ShellCheck, Renovate config, and it'll even check to make sure the flatpak you add exists on FlatHub
 - Production Grade Features
-  - Container signing with keyless OIDC
+  - Container signing with cosign (key-based + keyless OIDC)
 
 ### Homebrew Integration
 
@@ -158,7 +239,7 @@ Important: Change `finpilot` to your repository name in these 7 files:
 
 Your first build will start automatically!
 
-Note: Images are signed automatically with keyless OIDC signing — no keys or secrets to configure. See "Image Signing" below for details.
+Note: Images are signed automatically on every build — a key-based cosign signature (verified by bootc hosts) and a keyless OIDC signature (verified by the promotion release gate). See "Image Signing" below for details.
 
 ### 4. Enable Renovate (Required)
 
@@ -250,7 +331,10 @@ sudo systemctl reboot
 
 ## Image Signing
 
-Images are signed automatically with **keyless OIDC signing** via Cosign and GitHub Actions. No manual key generation, `cosign.key`, or `cosign.pub` files are required — the signature is created using GitHub's OIDC token via Fulcio during each build.
+Every pushed digest carries **two cosign signatures**, each for a different verifier:
+
+- **Key-based** (`SIGNING_SECRET` repo secret; public key committed as `cosign.pub`): host-side `containers-policy.json` verification (`sigstoreSigned` + `keyPath`, the ublue precedent) understands it directly, and `cosign.pub` ships in-image for `bootc switch --enforce-container-sigpolicy`.
+- **Keyless OIDC** via Fulcio (no keys or secrets — GitHub's OIDC token signs during each build): the factory promotion release gate verifies certificate identity against the GitHub OIDC issuer, which key-based signatures cannot satisfy.
 
 ### Why Sign Images?
 
@@ -262,6 +346,8 @@ Images are signed automatically with **keyless OIDC signing** via Cosign and Git
 
 ### Verify a Signed Image
 
+Keyless signature (what the promotion gate checks):
+
 ```bash
 cosign verify \
   --certificate-identity-regexp="https://github.com/your-username/your-repo-name/.github/workflows/" \
@@ -269,9 +355,15 @@ cosign verify \
   ghcr.io/your-username/your-repo-name:stable
 ```
 
+Key-based signature (what bootc hosts check):
+
+```bash
+cosign verify --key cosign.pub ghcr.io/your-username/your-repo-name:stable
+```
+
 ### Disabling Signing (Not Recommended)
 
-To disable, comment out the `Sign and publish` step in `.github/workflows/build-image.yml`. Be aware that unsigned images will fail the promotion release gate, so `main → stable` promotions will report `release/blocked` until signing is re-enabled.
+To disable, comment out the signing steps in `.github/workflows/build-image.yml`. Be aware that images without a keyless signature fail the promotion release gate, so `main → stable` promotions will report `release/blocked` until it is re-enabled — and hosts enforcing a container sigpolicy will reject images without the key-based signature.
 
 ## Love Your Image? Let's Go to Production
 
@@ -282,8 +374,8 @@ Ready to take your custom OS to production? Enable these features for enhanced s
 - [ ] **Verify Image Signing**
   - Provides cryptographic verification of your images
   - Prevents tampering and ensures authenticity
-  - Uses keyless OIDC signing via GitHub Actions — no keys or secrets required
-  - Verify it works with the `cosign verify` command in the "Image Signing" section above
+  - Key-based signing for bootc hosts plus keyless OIDC signing for the release gate
+  - Verify both with the `cosign verify` commands in the "Image Signing" section above
 
 - [ ] **Enable Image Rechunking** (Recommended)
   - Optimizes bootc image layers for better update performance
@@ -322,7 +414,7 @@ Rechunking runs only for publish builds, not pull requests. It requires addition
 
 Your workflow will:
 
-- Sign all images using keyless OIDC signing
+- Sign all images with key-based cosign (bootc host verification) and keyless OIDC (release gate)
 - Provide cryptographic proof of authenticity via SLSA build provenance attestation
 
 ## Detailed Guides
@@ -396,7 +488,7 @@ just run-vm-qcow2       # Test in browser-based VM
 
 This template provides security features for production use:
 
-- Image signing with keyless OIDC cosign for cryptographic verification
+- Image signing with cosign — key-based for bootc host verification, keyless OIDC for the release gate
 - Automated security updates via Renovate
 - Build provenance tracking
 

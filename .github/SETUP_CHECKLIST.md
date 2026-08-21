@@ -120,19 +120,27 @@ sudo systemctl reboot
 
 ### Verify Image Signing (Enabled by Default)
 
-Images are signed automatically with keyless OIDC signing — no keys or
-secrets to configure. After the first green build, verify the signature:
+Every build attaches two cosign signatures: key-based (requires the
+`SIGNING_SECRET` repo secret; public key committed as `cosign.pub`, verified
+by bootc hosts) and keyless OIDC (no setup, verified by the promotion release
+gate). After the first green build, verify both:
 
 ```bash
+# Keyless (what the promotion gate checks)
 cosign verify \
   --certificate-identity-regexp="https://github.com/YOUR_USERNAME/YOUR_REPO/.github/workflows/" \
   --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
   ghcr.io/YOUR_USERNAME/YOUR_REPO:stable-testing
+
+# Key-based (what bootc hosts check)
+cosign verify --key cosign.pub ghcr.io/YOUR_USERNAME/YOUR_REPO:stable-testing
 ```
 
-To disable signing (not recommended), comment out the `Sign and publish`
-step in `.github/workflows/build-image.yml`. Unsigned images fail the
-promotion release gate (`release/blocked`).
+- [ ] `SIGNING_SECRET` repo secret set (cosign private key matching `cosign.pub`)
+
+To disable signing (not recommended), comment out the signing steps in
+`.github/workflows/build-image.yml`. Images without a keyless signature fail
+the promotion release gate (`release/blocked`).
 
 **Agent skill:** `finpilot-templates` (signing verification)
 

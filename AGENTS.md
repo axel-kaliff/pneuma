@@ -37,9 +37,11 @@ links lives in `.agents/skills/README.md`.
 | `main`   | `:stable-testing` | Testers and release candidates |
 | `stable` | `:stable`         | Production systems             |
 
-The promotion release gate verifies cosign signatures on the `:testing` tag;
-keyless signing is enabled by default in `build-image.yml` ("Sign and publish"
-step) and reports `release/ready` once a signed `:testing` image exists.
+The promotion release gate verifies **keyless** cosign signatures on the
+`:testing` tag — provided by the "Sign and publish (keyless, release gate)"
+step in `build-image.yml` (the key-based `SIGNING_SECRET` signature serves
+bootc host verification and cannot satisfy the gate). It reports
+`release/ready` once a keyless-signed `:testing` image exists.
 
 ## CRITICAL: GitHub API Usage
 

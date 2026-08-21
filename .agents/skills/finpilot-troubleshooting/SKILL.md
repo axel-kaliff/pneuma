@@ -67,10 +67,10 @@ description: >-
 | PR validation fails: justfile              | Invalid just syntax                                | Run `just --list` locally to test, fix syntax                             |
 | CI build fails: workflow permissions       | Missing `id-token: write` or `packages: write`     | Verify `.github/workflows/build-image.yml` has correct permissions        |
 | CI build fails: token health               | `RENOVATE_TOKEN` or `GITHUB_TOKEN` invalid/expired | Check token expiry, verify scopes, regenerate if needed                   |
-| CI build fails: signing misconfig          | OIDC token unavailable (self-hosted runner or restricted permissions) | Verify `id-token: write` is granted and the runner supports OIDC; signing is `continue-on-error`, so builds still publish |
+| CI build fails: signing misconfig          | Keyless: OIDC token unavailable (restricted permissions). Key-based: `SIGNING_SECRET` missing or not a valid cosign key | Keyless is `continue-on-error` (builds still publish); the key-based `Sign container image` step is not — set `SIGNING_SECRET` to the private key matching `cosign.pub` |
 | CI build fails: composite action not found | Wrong commit SHA or repo name in `uses:`           | Verify `projectbluefin/actions` SHA, check network access                 |
 | CI build succeeds but image not published  | Wrong `IMAGE_NAME` or `IMAGE_VENDOR`               | Check `Containerfile` ARGs, verify `clean.yml` package name matches       |
-| Promotion gate blocked: `release/blocked`, cosign "no signatures found" | Image pushed before signing was enabled, or the `Sign and publish` step failed silently (`continue-on-error`) | Merge a new build on `main` so a signed `:testing` image is published; check the build log's sign step for errors |
+| Promotion gate blocked: `release/blocked`, cosign "no signatures found" | Image pushed before keyless signing was enabled, or the keyless `Sign and publish` step failed silently (`continue-on-error`); the key-based signature alone cannot satisfy the gate's OIDC identity check | Merge a new build on `main` so a keyless-signed `:testing` image is published; check the build log's keyless sign step for errors |
 
 ## Runtime Issues
 

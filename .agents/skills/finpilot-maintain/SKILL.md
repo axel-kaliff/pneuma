@@ -77,9 +77,10 @@ typical Linux users, not developers.
 
 ## Verify Signing
 
-Keyless OIDC signing runs via the `Sign and publish` step in
-`.github/workflows/build-image.yml`. Unsigned images fail the promotion release
-gate, so leave it enabled. Full details: `finpilot-templates`.
+Two signing steps run in `.github/workflows/build-image.yml`: key-based
+(`SIGNING_SECRET`, verified by bootc hosts via `cosign.pub`) and keyless OIDC
+(verified by the promotion release gate). Images without the keyless signature
+fail the release gate, so leave both enabled. Full details: `finpilot-templates`.
 
 ## Local Test Loop
 
@@ -177,7 +178,7 @@ digest-only PRs. If Renovate stops creating PRs, run the Renovate section of
 | "I'll update the README later when I have more changes."                    | Update incrementally. "Later" often means never, and users rely on README for current state.        |
 | "Local builds are optional since CI builds everything."                     | Local builds catch issues faster and don't burn CI minutes. The `just build` loop is essential.     |
 | "I'll push to main to save time."                                           | PRs are cheap. Direct pushes bypass validation and create untraceable changes.                      |
-| "Signing is too hard — I'll skip it."                                       | Keyless OIDC signing is already enabled in the template — no setup, no secrets.                     |
+| "Signing is too hard — I'll skip it."                                       | Both signing steps are already wired up; keyless needs nothing, key-based only the `SIGNING_SECRET` secret. |
 
 ## Red Flags
 
