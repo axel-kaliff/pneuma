@@ -254,7 +254,8 @@ cat /usr/share/pneuma/omarchy-build-manifest.txt
 
 # Cheap in-container assertions — fail the build here, not in a VM.
 rpm -q omedora omedora-settings hyprland hyprland-no-session quickshell uwsm \
-    sddm sddm-wayland-generic xdg-desktop-portal-hyprland chromium kitty starship
+    sddm sddm-wayland-generic xdg-desktop-portal-hyprland chromium kitty starship ttfx
+test -x /usr/bin/ttfx # omarchy-launch-screensaver exits silently without it
 test -x /usr/bin/Hyprland
 test -x /usr/bin/start-hyprland
 test -x /usr/bin/omarchy-menu
