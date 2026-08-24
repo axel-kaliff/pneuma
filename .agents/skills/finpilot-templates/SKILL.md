@@ -2,8 +2,8 @@
 name: finpilot-templates
 description: >-
   Template identity rules: the seven rename locations, image identity ARGs,
-  keyless signing setup, and AGENTS.md update rules. Use when renaming a fork,
-  enabling signing, or updating AGENTS.md and setup docs.
+  keyless signing, and AGENTS.md update rules. Use when renaming a fork,
+  verifying or explaining signing, or updating AGENTS.md and setup docs.
 metadata:
   context7-sources:
     - /renovatebot/renovate
@@ -14,7 +14,7 @@ metadata:
 ## When to Use
 
 - Renaming `finpilot` in a fork (the 7 locations)
-- Enabling or explaining keyless signing
+- Verifying or explaining keyless signing
 - Updating AGENTS.md or copilot instructions
 - Updating README.md setup sections or SETUP_CHECKLIST.md
 - Documenting new mandatory setup steps for forks
@@ -29,7 +29,7 @@ metadata:
 
 1. **Rename in the 7 locations** (table below)
 2. **Check the image identity ARGs** match the new name (below)
-3. **Enable keyless signing** when the fork is production-ready (below)
+3. **Verify keyless signing** works on the fork's first signed build (below)
 4. **Update AGENTS.md** per the rules below
 5. **Verify** against the checklist at the end of this skill
 
@@ -88,16 +88,23 @@ These are consumed by `build/00-image-info.sh` to write:
 - `/usr/share/ublue-os/image-info.json` (read by the ublue ecosystem)
 - `/usr/lib/os-release` branding fields
 
-## Signing Setup (Keyless OIDC)
+## Signing (Dual: Key-Based + Keyless OIDC)
 
-This template uses **keyless OIDC signing** via Cosign + Fulcio. No `cosign.key`,
-`cosign.pub`, or `SIGNING_SECRET` are needed.
+Every build attaches two cosign signatures in `.github/workflows/build-image.yml`,
+each for a different verifier:
 
-To enable:
+- **Key-based** (`Sign container image` step): signs with the `SIGNING_SECRET`
+  repo secret; the public key is committed as `cosign.pub` at the repo root and
+  shipped in-image. Host-side `containers-policy.json` verification
+  (`sigstoreSigned` + `keyPath`) and `bootc switch
+  --enforce-container-sigpolicy` read this signature.
+- **Keyless OIDC** (`Sign and publish (keyless, release gate)` step): Cosign +
+  Fulcio via GitHub's OIDC token — no keys or secrets. The factory promotion
+  release gate verifies certificate identity against the GitHub OIDC issuer;
+  key-based signatures cannot satisfy it.
 
-1. Edit `.github/workflows/build-image.yml`
-2. Find the `# OPTIONAL: Sign and attest` section
-3. Uncomment the `Sign and publish` step
+Images without a keyless signature fail the promotion release gate
+(`release/blocked`), so leave both steps enabled.
 
 Users verify images with:
 
@@ -108,8 +115,8 @@ cosign verify \
   ghcr.io/YOUR_ORG/YOUR_REPO:stable
 ```
 
-**Never** add a `cosign.pub` file with a placeholder — it is misleading and was removed.
-Static-key signing (`SIGNING_SECRET`) is not supported by this template.
+`cosign.pub` at the repo root is the real public key for the key-based signature —
+keep it in sync with the `SIGNING_SECRET` private key.
 **Never commit `cosign.key`** — it is `.gitignore`-d as a safety net.
 
 ## AGENTS.md Update Rules
@@ -132,7 +139,7 @@ Static-key signing (`SIGNING_SECRET`) is not supported by this template.
 ## Red Flags
 
 - Fork repo still has `finpilot` in `clean.yml` (image cleanup will target wrong package)
-- `cosign.pub` placeholder file added to a fork
+- `cosign.pub` out of sync with the `SIGNING_SECRET` private key
 - AGENTS.md referencing line numbers instead of semantic identifiers
 - `## Start here` section removed or not routing tasks to Agent Skills
 - `RENOVATE_TOKEN` not set but Renovate workflow is enabled (fails silently on first run)
@@ -141,6 +148,6 @@ Static-key signing (`SIGNING_SECRET`) is not supported by this template.
 
 - [ ] All 7 rename locations updated?
 - [ ] `IMAGE_NAME` / `IMAGE_VENDOR` ARGs match the fork?
-- [ ] Signing enabled only via keyless OIDC (no `cosign.key`/`cosign.pub`)?
+- [ ] Both signing steps present (key-based for hosts, keyless for the gate; no `cosign.key` committed)?
 - [ ] `AGENTS.md` uses semantic references (no line numbers)?
 - [ ] `AGENTS.md` `Last Updated` date current?
