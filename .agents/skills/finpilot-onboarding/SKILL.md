@@ -31,7 +31,7 @@ description: >-
 5. **Configure branch protection and auto-merge**
 6. **Trigger first build**
 7. **Add the "What Makes this Raptor Different" section to README** (template below)
-8. **Enable signing** (optional, recommended for production; setup: `finpilot-templates`)
+8. **Verify signing** on the first signed build (`finpilot-templates`)
 
 Keep day-one changes minimal and iterate in phases:
 
@@ -41,7 +41,7 @@ Keep day-one changes minimal and iterate in phases:
    (`finpilot-packages`, `finpilot-build`)
 3. **Phase 3 — Runtime**: add Flatpak/Brew customizations, test in a VM with
    `just run-vm-qcow2` (`finpilot-custom`)
-4. **Phase 4 — Production**: enable signing, full branch protection
+4. **Phase 4 — Production**: verify signing, full branch protection
    (`finpilot-templates`, `finpilot-maintain`)
 
 Resist changing everything at once — each phase validates the previous.
@@ -129,11 +129,11 @@ _Last updated: [date]_
 **Maintenance requirement**: update this section on every package or
 configuration change — see the update rules in `finpilot-maintain`.
 
-## Optional Signing Setup
+## Signing
 
-Signing is **disabled by default** so first builds succeed immediately. Enable
-later for production — full keyless OIDC setup and verification:
-`finpilot-templates`.
+Keyless signing needs no setup; the key-based host signature additionally
+requires the `SIGNING_SECRET` repo secret (public key committed as
+`cosign.pub`). Verification details: `finpilot-templates`.
 
 ## Common Rationalizations
 
@@ -142,14 +142,14 @@ later for production — full keyless OIDC setup and verification:
 | "I'll rename the obvious places and fix the rest later."       | Missing `.github/workflows/clean.yml` or `iso/iso.toml` causes silent failures months later. Do all 7 now. |
 | "I don't need branch protection for a personal fork."          | Without it, Renovate auto-merge won't work, and digest PRs sit unmerged.                                   |
 | "I'll add the raptor section to README after I have packages." | Add the section immediately with placeholders. Update it iteratively.                                      |
-| "Signing is too much work for a first build."                  | Signing is disabled by default. First builds succeed immediately. Enable later.                            |
+| "Signing is too much work for a first build."                  | Nothing to configure — builds sign images automatically.                                                   |
 | "I'll use my fine-grained PAT for Renovate."                   | Renovate requires a **Classic PAT** with `repo` + `workflow` scopes. Fine-grained PATs do not work.        |
 
 ## Red Flags
 
 - Fork repo still has `finpilot` in any of the 7 locations
 - `RENOVATE_TOKEN` not set but Renovate workflow is enabled (fails silently or errors on first run)
-- `cosign.pub` or `cosign.key` added to the repo
+- `cosign.key` added to the repo (`cosign.pub` is legitimately committed; the private key never is)
 - Auto-merge not enabled, causing Renovate digest PRs to sit unmerged
 - Branch protection missing `validate` as a required check
 - README missing the "What Makes this Raptor Different" section entirely
@@ -163,4 +163,4 @@ later for production — full keyless OIDC setup and verification:
 - [ ] Branch protection for `main` configured with `validate` as required check?
 - [ ] First green build succeeded and image published to GHCR?
 - [ ] README contains the "What Makes this Raptor Different" section?
-- [ ] Optional signing enabled (or deferred for later)?
+- [ ] Signing verified on the first signed build?
