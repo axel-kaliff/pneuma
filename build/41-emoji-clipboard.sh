@@ -38,9 +38,11 @@ echo "::group:: Smoke checks"
 bash -n "${TARGET}"
 [[ -x "${TARGET}" ]]
 
-# The override took: no --sensitive left, persistent wl-copy in place.
+# The override took: no --sensitive left in the code, persistent wl-copy in
+# place. Comments are stripped first — the override documents the upstream
+# flag it replaces, and grepping the whole file trips over that prose.
 # Plain `! grep` is exempt from errexit, so assert through an if.
-if grep -q -- '--sensitive' "${TARGET}"; then
+if grep -v '^[[:space:]]*#' "${TARGET}" | grep -q -- '--sensitive'; then
     echo "override did not take: --sensitive still present in ${TARGET}" >&2
     exit 1
 fi
