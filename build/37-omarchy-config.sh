@@ -393,7 +393,11 @@ rpm -q --qf '%{VERSION}' hyprland-no-session | grep -qE '^(0\.(5[6-9]|[6-9][0-9]
 # the caller carries on. Guard the whole class rather than the two commands
 # that hit it -- if an omarchy update trips this, that command needs an
 # override in omarchy-overrides/bin too.
-! grep -lE '^[^#]*wl-copy[^#]*--sensitive' /usr/bin/omarchy-*
+# Plain `! grep` is exempt from errexit, so assert through an if.
+if grep -lE '^[^#]*wl-copy[^#]*--sensitive' /usr/bin/omarchy-*; then
+    echo "wl-copy --sensitive still present in the commands listed above" >&2
+    exit 1
+fi
 
 echo "::endgroup::"
 
