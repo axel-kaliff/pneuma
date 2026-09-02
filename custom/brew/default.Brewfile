@@ -30,6 +30,7 @@ brew "trash-cli"
 brew "ugrep"
 brew "uv"
 brew "yazi"
+brew "media-info" # yazi video previews: metadata pane
 brew "yq"
 brew "zellij"
 brew "zoxide"
