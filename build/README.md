@@ -15,6 +15,7 @@ Scripts are named with a number prefix (e.g., `10-build.sh`, `20-onepassword.sh`
 - **`36-omarchy-payload.sh`** - Omedora payload + Hyprland 0.56 stack, rpmbuilt from pinned specs
 - **`37-omarchy-config.sh`** - SDDM/session/skel configuration + smoke checks; makes SDDM the default display manager
 - **`40-branding.sh`** - Plymouth boot splash and GRUB theme (runs last so the pneuma splash owns the initramfs)
+- **`41-emoji-clipboard.sh`** - Overrides omarchy-menu-emoji-insert with a persistent wl-copy (el10's wl-clipboard 2.2.1 lacks `--sensitive`)
 
 ## Example Scripts
 
