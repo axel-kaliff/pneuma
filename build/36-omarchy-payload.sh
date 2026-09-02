@@ -84,6 +84,7 @@ dnf -y --best install --enablerepo=epel-multimedia \
     xdg-desktop-portal-hyprland \
     starship \
     omedora \
+    ttfx \
     libinput \
     libxkbcommon \
     foot \
