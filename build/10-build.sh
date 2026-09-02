@@ -172,19 +172,26 @@ echo "::group:: Kernel Hardening"
 
 # Sysctl hardening
 # Use /usr/lib path (immutable layer) — /etc is user-owned state on ostree
+#
+# Deliberately narrow: this is a developer workstation, so knobs that cost
+# more in diagnosis than they buy in defence are left at the distro value.
+# Do NOT re-add these without re-reading why they were dropped:
+#   kptr_restrict = 2   50-redhat.conf ships 1 (hidden from unprivileged,
+#                       visible to CAP_SYSLOG). 2 hides pointers from root as
+#                       well and breaks perf symbolisation.
+#   fs.suid_dumpable=0  overrides systemd's 50-coredump.conf (2, root-only
+#                       readable) and silently disables systemd-coredump.
+#   dmesg_restrict = 1  locks the console user out of the first tool you reach
+#                       for when triaging, on a single-user machine where that
+#                       user can sudo anyway.
 mkdir -p /usr/lib/sysctl.d
 cat > /usr/lib/sysctl.d/99-pneuma-hardening.conf << 'SYSCTLEOF'
-# Restrict dmesg access to root
-kernel.dmesg_restrict = 1
-
-# Hide kernel pointers
-kernel.kptr_restrict = 2
-
-# Restrict ptrace
-kernel.yama.ptrace_scope = 2
-
-# Disable core dumps
-fs.suid_dumpable = 0
+# Restrict ptrace to descendants: gdb/strace still work on processes you
+# launch, and PR_SET_PTRACER is honoured (Chromium's crash handler needs it);
+# attaching to unrelated running processes is not allowed. The base ships 0
+# in 10-default-yama-scope.conf; 2 requires CAP_SYS_PTRACE and blocks
+# debugging outright, including inside Flatpak sandboxes.
+kernel.yama.ptrace_scope = 1
 
 # Network hardening
 net.ipv4.conf.all.rp_filter = 1
