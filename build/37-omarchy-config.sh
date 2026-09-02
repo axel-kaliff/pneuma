@@ -186,6 +186,73 @@ done
 
 echo "::endgroup::"
 
+echo "::group:: Default Keyboard Layouts (US + Swedish)"
+
+# omedora-settings ships the skel input.lua fully commented; append an active
+# override so every user seeded from skel gets both layouts. Existing users
+# keep their own copy (pneuma-omarchy-user-setup never clobbers).
+cat >> /etc/skel/.config/hypr/input.lua << 'EOF'
+
+-- Pneuma default: US + Swedish layouts, toggle with Left Alt + Right Alt.
+hl.config({
+  input = {
+    kb_layout = "us,se",
+    kb_options = "compose:caps,shift:both_capslock_cancel,grp:alts_toggle",
+  },
+})
+EOF
+
+echo "::endgroup::"
+
+echo "::group:: Vim-Style Window Navigation"
+
+# Same skel-append pattern as the layouts above: omedora-settings ships
+# bindings.lua fully commented. SUPER + hjkl focuses, + SHIFT swaps. The three
+# defaults that owned those keys move to the same key with ALT added, except
+# SUPER + ALT + K (already the tmux cheatsheet), so the Omarchy keybindings
+# menu takes SHIFT + ALT. Unbinds must precede the rebinds.
+cat >> /etc/skel/.config/hypr/bindings.lua << 'EOF'
+
+-- Pneuma default: vim-style window navigation.
+hl.unbind("SUPER + J") -- was: Toggle window split
+hl.unbind("SUPER + K") -- was: Keybindings
+hl.unbind("SUPER + L") -- was: Toggle workspace layout
+
+o.bind("SUPER + ALT + J", "Toggle window split", hl.dsp.layout("togglesplit"))
+o.bind("SUPER + SHIFT + ALT + K", "Keybindings", "omarchy-menu-keybindings")
+o.bind("SUPER + ALT + L", "Toggle workspace layout", "omarchy-hyprland-workspace-layout-toggle")
+
+o.bind("SUPER + H", "Focus on left window", hl.dsp.focus({ direction = "l" }))
+o.bind("SUPER + J", "Focus on below window", hl.dsp.focus({ direction = "d" }))
+o.bind("SUPER + K", "Focus on above window", hl.dsp.focus({ direction = "u" }))
+o.bind("SUPER + L", "Focus on right window", hl.dsp.focus({ direction = "r" }))
+
+o.bind("SUPER + SHIFT + H", "Swap window to the left", hl.dsp.window.swap({ direction = "l" }))
+o.bind("SUPER + SHIFT + J", "Swap window down", hl.dsp.window.swap({ direction = "d" }))
+o.bind("SUPER + SHIFT + K", "Swap window up", hl.dsp.window.swap({ direction = "u" }))
+o.bind("SUPER + SHIFT + L", "Swap window to the right", hl.dsp.window.swap({ direction = "r" }))
+EOF
+
+echo "::endgroup::"
+
+echo "::group:: Laptop Panel Below External Monitors"
+
+# Same skel-append pattern again. Hyprland resolves eDP-1 first (monitor ID 0),
+# so putting auto-center-down on it leaves nothing to center against and the
+# monitors land side by side. Inverting it works: pin eDP-1 as the anchor and
+# let everything else auto-center above. Both rules reuse the file's own
+# omarchy_monitor_scale local, so omarchy-hyprland-monitor-scaling (which only
+# rewrites that one line) keeps working. Machines with no eDP-1 fall through
+# the second rule; a desktop with several externals stacks them upward.
+cat >> /etc/skel/.config/hypr/monitors.lua << 'EOF'
+
+-- Pneuma default: the laptop panel sits centered below any external monitor.
+hl.monitor({ output = "", mode = "preferred", position = "auto-center-up", scale = omarchy_monitor_scale })
+hl.monitor({ output = "eDP-1", mode = "preferred", position = "0x0", scale = omarchy_monitor_scale })
+EOF
+
+echo "::endgroup::"
+
 echo "::group:: Brew PATH for uwsm Sessions"
 
 # uwsm recomposes the session environment at login (prepare-env.sh sources
@@ -277,6 +344,9 @@ test -f /usr/share/applications/com.mitchellh.ghostty.desktop # terminal-list ID
 [[ "$(readlink /etc/systemd/system/display-manager.service)" == *sddm.service ]]
 [[ "$(grep -v '^#' /usr/share/xdg-terminal-exec/hyprland-xdg-terminals.list | head -n1)" == "com.mitchellh.ghostty.desktop" ]]
 grep -rqs 'sddm' /usr/lib/sysusers.d/
+grep -q 'kb_layout = "us,se"' /etc/skel/.config/hypr/input.lua
+grep -q 'o.bind("SUPER + H", "Focus on left window"' /etc/skel/.config/hypr/bindings.lua
+grep -q 'position = "auto-center-up"' /etc/skel/.config/hypr/monitors.lua
 # No grep -q here: -q exits at first match and fc-list's remaining writes
 # then die with SIGPIPE (exit 141), which pipefail turns into a build failure.
 fc-list | grep -i 'JetBrainsMono Nerd Font' > /dev/null
