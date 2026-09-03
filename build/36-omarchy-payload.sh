@@ -15,10 +15,14 @@ set -eoux pipefail
 # the runtime set — image builds went from ~1-2 h of compiling to a dnf install.
 #
 #   akaliff/pneuma ......... hypr 0.56 stack, quickshell, uwsm, starship,
-#                                omedora(+settings), keyd, muParser, and
-#                                libxkbcommon >= 1.11 (CS10 ships 1.7 — the
-#                                single remaining base-lib override; drop it
-#                                when CS10 rebases past 1.11)
+#                                omedora(+settings), keyd, muParser,
+#                                yaru-icon-theme (Fedora's yaru-theme srpm
+#                                rebuilt for epel-10; noarch, and the icon
+#                                subpackage needs only hicolor-icon-theme at
+#                                runtime), and libxkbcommon >= 1.11 (CS10
+#                                ships 1.7 — the single remaining base-lib
+#                                override; drop it when CS10 rebases past
+#                                1.11)
 #   yselkowitz/wlroots-epel .... leaf Wayland tools EL10 lacks (foot, grim,
 #                                slurp, wtype, brightnessctl) — trusted Fedora
 #                                maintainer, real epel-10 chroot
@@ -76,6 +80,10 @@ echo "::group:: Install the Omarchy runtime set"
 #   muParser rides in as hyprland's automatic soname dependency.
 #   epel-multimedia: openh264 — EPEL's noopenh264 conflicts with the base's
 #     real openh264 (same reason the rpmbuild flow needed it).
+#   yaru-icon-theme: the icon theme every omarchy theme selects. Not in EL10
+#     at all, and without it GTK4 resolves icon-theme against a directory
+#     that does not exist and falls straight through to hicolor, skipping
+#     Adwaita — see the note in script 35. ~58 MB installed.
 dnf -y --best install --enablerepo=epel-multimedia \
     hyprland \
     hyprland-guiutils \
@@ -85,6 +93,7 @@ dnf -y --best install --enablerepo=epel-multimedia \
     starship \
     omedora \
     ttfx \
+    yaru-icon-theme \
     libinput \
     libxkbcommon \
     foot \
@@ -111,6 +120,28 @@ if ldd /usr/bin/Hyprland | grep -q 'not found'; then
     echo "ERROR: Hyprland has unresolved shared libraries:" >&2
     ldd /usr/bin/Hyprland | grep 'not found' >&2
     exit 1
+fi
+
+# Every icon theme an omarchy theme can select has to exist on disk. Nothing
+# checked this before, which is how the image shipped with icon-theme pointing
+# at an uninstalled Yaru: GTK4 fails such a lookup silently, at runtime, by
+# dropping to hicolor. omedora carries the themes and lands in this same
+# transaction, so the cross-check belongs here.
+[[ -d /usr/share/omarchy/themes ]]
+
+unresolved_icon_themes=()
+for icons_theme in /usr/share/omarchy/themes/*/icons.theme; do
+    variant=$(head -1 "${icons_theme}")
+    [[ -f "/usr/share/icons/${variant}/index.theme" ]] ||
+        unresolved_icon_themes+=("$(basename "$(dirname "${icons_theme}")") -> ${variant}")
+done
+
+# Yaru-gray and Yaru-grey are upstream omarchy typos — Yaru builds neither
+# spelling, on Arch either — so this warns instead of failing the build.
+# Anything beyond those two means a theme bump outran the icon package.
+if [[ ${#unresolved_icon_themes[@]} -gt 0 ]]; then
+    printf 'WARNING: omarchy theme selects an icon theme that is not installed: %s\n' \
+        "${unresolved_icon_themes[@]}" >&2
 fi
 
 echo "::endgroup::"
