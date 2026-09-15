@@ -191,13 +191,20 @@ echo "::group:: Default Keyboard Layouts (US + Swedish)"
 # omedora-settings ships the skel input.lua fully commented; append an active
 # override so every user seeded from skel gets both layouts. Existing users
 # keep their own copy (pneuma-omarchy-user-setup never clobbers).
+#
+# No grp:* option here on purpose. Every Alt-based group toggle -- including
+# grp:alts_toggle, which this used to set -- rebinds <RALT> to plain Alt_R,
+# which destroys AltGr (ISO_Level3_Shift). US never notices, but on "se" every
+# level-3 symbol lives behind AltGr: @ $ { [ ] } \ | ~ all stop working.
+# The layout toggle is a keybinding instead, see the SUPER + SHIFT + SPACE
+# bind appended to bindings.lua below.
 cat >> /etc/skel/.config/hypr/input.lua << 'EOF'
 
--- Pneuma default: US + Swedish layouts, toggle with Left Alt + Right Alt.
+-- Pneuma default: US + Swedish layouts, toggle with SUPER + SHIFT + SPACE.
 hl.config({
   input = {
     kb_layout = "us,se",
-    kb_options = "compose:caps,shift:both_capslock_cancel,grp:alts_toggle",
+    kb_options = "compose:caps,shift:both_capslock_cancel",
   },
 })
 EOF
@@ -231,6 +238,13 @@ o.bind("SUPER + SHIFT + H", "Swap window to the left", hl.dsp.window.swap({ dire
 o.bind("SUPER + SHIFT + J", "Swap window down", hl.dsp.window.swap({ direction = "d" }))
 o.bind("SUPER + SHIFT + K", "Swap window up", hl.dsp.window.swap({ direction = "u" }))
 o.bind("SUPER + SHIFT + L", "Swap window to the right", hl.dsp.window.swap({ direction = "r" }))
+
+-- Input language switching, replacing the Alt+Alt toggle that input.lua no
+-- longer sets (it broke AltGr). The top-bar toggle it displaces moves to
+-- SUPER + SHIFT + T.
+hl.unbind("SUPER + SHIFT + SPACE") -- was: Toggle top bar
+o.bind_toggle("SUPER + SHIFT + T", "Toggle top bar", "bar")
+o.bind("SUPER + SHIFT + SPACE", "Next keyboard layout", "hyprctl switchxkblayout all next")
 EOF
 
 echo "::endgroup::"
@@ -376,6 +390,15 @@ test -f /usr/share/applications/com.mitchellh.ghostty.desktop # terminal-list ID
 [[ "$(grep -v '^#' /usr/share/xdg-terminal-exec/hyprland-xdg-terminals.list | head -n1)" == "com.mitchellh.ghostty.desktop" ]]
 grep -rqs 'sddm' /usr/lib/sysusers.d/
 grep -q 'kb_layout = "us,se"' /etc/skel/.config/hypr/input.lua
+# Active (non-comment) grp:* line only -- the skel ships a commented example
+# that mentions grp:alts_toggle. Any Alt group toggle rebinds <RALT> and kills AltGr.
+# Asserted through an if: a plain `! grep` is exempt from errexit, so it would
+# report the problem by doing nothing at all.
+if grep -qE '^[[:space:]]*[^-[:space:]].*grp:' /etc/skel/.config/hypr/input.lua; then
+    echo "ERROR: active grp:* option in skel input.lua — it rebinds RALT and kills AltGr" >&2
+    exit 1
+fi
+grep -q 'switchxkblayout all next' /etc/skel/.config/hypr/bindings.lua
 grep -q 'o.bind("SUPER + H", "Focus on left window"' /etc/skel/.config/hypr/bindings.lua
 grep -q 'position = "auto-center-up"' /etc/skel/.config/hypr/monitors.lua
 # No grep -q here: -q exits at first match and fc-list's remaining writes

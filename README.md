@@ -47,8 +47,9 @@ Notes:
 - To let the Omarchy theme system restyle your **stowed** Ghostty config, add this line to it: `config-file = ?"~/.local/state/omarchy/current/theme/ghostty.conf"`.
 - Update-subsystem overrides live in `/usr/share/pneuma/omarchy-overrides` (`build/files/usr/share/pneuma/omarchy-overrides/bin`) and are installed **over** the RPM's binaries at image build — never patch the RPM payload in place.
 - SSH agent: `gcr-ssh-agent.socket` is enabled for all users, so `SSH_AUTH_SOCK` is set in Hyprland sessions too (GNOME's own agent only autostarts under GNOME). Keys still have to be added once — `ssh-add ~/.ssh/id_ed25519`, or `AddKeysToAgent yes` in `~/.ssh/config`.
+- Docker and the rest of the dx tooling no longer ship in the image: upstream folded `bluefin-dx:lts-hwe` into `bluefin-lts:stable`, which restores them per machine with `ujust devmode` (one reboot).
 
-_Last updated: 2026-08-18_
+_Last updated: 2026-09-15_
 
 ## Package pipeline (COPR)
 
@@ -179,11 +180,13 @@ Use the `finpilot-maintain` and `finpilot-ci` skills, then:
 ### Build System
 
 - Automated builds via GitHub Actions on every commit
-- Self-hosted Renovate for automated dependency updates
+- Renovate (GitHub App) for automated dependency updates
+- `sync-base-image.yml` repins the base image digest daily and builds on it
+- `release-stable.yml` merges the promotion PR and publishes `:stable` every Thursday
 - Automatic cleanup of old images (90+ days) to keep it tidy
 - Pull request workflow - test changes before merging to main
   - PRs build and validate before merge
-  - `main` branch builds `:stable` images
+  - `main` builds `:stable-testing`; `stable` builds `:stable`
 - Validates your files on pull requests so you never break a build:
   - Brewfile, Justfile, ShellCheck, Renovate config, and it'll even check to make sure the flatpak you add exists on FlatHub
 - Production Grade Features
@@ -244,27 +247,20 @@ Note: Images are signed automatically on every build — a key-based cosign sign
 
 ### 4. Enable Renovate (Required)
 
-Renovate automatically updates dependencies and GitHub Actions (including workflow files). This template uses a self-hosted Renovate runner via `projectbluefin/actions`.
+Renovate updates dependencies and GitHub Actions (including workflow files).
 
-**One-time setup:**
+**One-time setup:** install the [Renovate GitHub App](https://github.com/apps/renovate)
+on this repository and enable **Settings → General → Pull Requests → Allow auto-merge**
+so low-risk updates can merge themselves once checks pass.
 
-1. Go to GitHub → Settings → Developer settings → **Personal access tokens** → **Tokens (classic)**
-2. Click **Generate new token (classic)**
-3. Set a note like `renovate-finpilot`
-4. Select scopes: **`repo`** (full control) and **`workflow`** (update workflows)
-5. Click **Generate token** and copy the value
-6. Go to your repository → Settings → Secrets and variables → Actions
-7. Add a new secret: **`RENOVATE_TOKEN`** (paste the token value)
-8. Enable **Settings → General → Pull Requests → Allow auto-merge** so Renovate can merge low-risk updates after checks pass
-9. **Configure branch protection for `main`** (required for automerge to work):
-   - Go to Settings → Branches → Add rule
-   - Set **Branch name pattern** to `main`
-   - Enable **"Require a pull request before merging"**
-   - Enable **"Require status checks to pass before merging"**
-   - Add `validate` as a required status check
-   - Enable **"Require branches to be up to date before merging"** (recommended)
+The self-hosted runner this template shipped with was removed: it needed a classic PAT
+in `RENOVATE_TOKEN`, and without one it exited in 8 seconds on every scheduled run — the
+base image stayed pinned to an upstream that had stopped building two months earlier.
+The app needs no secret to rotate or forget.
 
-Renovate will run every 6 hours and on config changes. It pins GitHub Actions to SHAs and updates tracked image digests automatically.
+The base image digest is deliberately **not** Renovate's to manage
+(`.github/renovate.json` disables it): `sync-base-image.yml` owns that pin so base
+freshness never depends on an app being installed.
 
 ### 5. Maintain Your Template
 
