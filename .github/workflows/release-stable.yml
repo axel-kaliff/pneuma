@@ -1,0 +1,75 @@
+---
+name: Release stable
+
+# Merges the open main -> stable promotion PR on a weekly cadence and builds
+# :stable from it.
+#
+# promote-main-to-stable.yml already opens the PR and asks for auto-merge, but
+# GitHub refuses to enable auto-merge on a PR nothing gates: `stable` requires
+# no status checks and no reviews, so every promotion PR sat until someone
+# merged it by hand — :stable was 13 days behind main when this was added.
+#
+# The release gate labels the PR release/ready (or release/blocked); this job
+# merges only a ready one, and `do-not-merge` on the PR holds the release for
+# as long as the label stays on. A GITHUB_TOKEN merge cannot trigger
+# build-image.yml's push trigger, so the stable build is dispatched explicitly
+# (workflow_dispatch is the documented exception). For the same reason
+# sync-stable-to-main.yml stays quiet after these merges — harmless, since the
+# promotion branch is rebuilt from origin/stable on every run.
+
+on:
+  schedule:
+    - cron: "0 4 * * 4" # Thursday 04:00 UTC, matching bluefin-lts's cadence
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: release-stable
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Promote main to stable
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Merge the promotion PR and build :stable
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          pr=$(gh pr list --state open --base stable \
+            --head auto/promote-main-to-stable \
+            --json number,labels --jq '.[0] // empty')
+          if [[ -z "${pr}" ]]; then
+            echo "No open promotion PR — stable already matches main." \
+              >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
+
+          number=$(jq -r .number <<<"${pr}")
+          labels=$(jq -r '[.labels[].name] | join(",")' <<<"${pr}")
+          echo "PR #${number} labels: ${labels:-none}"
+
+          if [[ ",${labels}," == *",do-not-merge,"* ]]; then
+            echo "PR #${number} is held by the do-not-merge label; not releasing." \
+              >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
+          if [[ ",${labels}," != *",release/ready,"* ]]; then
+            echo "PR #${number} has not passed the release gate; not releasing." \
+              >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
+
+          gh pr merge "${number}" --squash
+          gh workflow run build-image.yml --ref stable
+          echo "Merged PR #${number} and requested the :stable build." \
+            >> "${GITHUB_STEP_SUMMARY}"

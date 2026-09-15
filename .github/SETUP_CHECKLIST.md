@@ -64,9 +64,8 @@ git push origin main
 
 ### 5. Enable Renovate (Required)
 
-- [ ] Create a **Classic PAT** (Settings → Developer settings → Personal access tokens → Tokens (classic))
-  - Scopes: `repo` (full control) + `workflow` (update workflows)
-- [ ] Add the token as repository secret **`RENOVATE_TOKEN`** (Settings → Secrets and variables → Actions)
+- [ ] Install the [Renovate GitHub App](https://github.com/apps/renovate) on the repository
+      (no PAT, nothing to rotate — the self-hosted runner that needed `RENOVATE_TOKEN` was removed)
 - [ ] Enable **Settings → General → Pull Requests → Allow auto-merge**
 - [ ] Configure branch protection for `main`:
   - Settings → Branches → Add rule
