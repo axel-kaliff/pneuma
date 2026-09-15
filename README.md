@@ -47,8 +47,9 @@ Notes:
 - To let the Omarchy theme system restyle your **stowed** Ghostty config, add this line to it: `config-file = ?"~/.local/state/omarchy/current/theme/ghostty.conf"`.
 - Update-subsystem overrides live in `/usr/share/pneuma/omarchy-overrides` (`build/files/usr/share/pneuma/omarchy-overrides/bin`) and are installed **over** the RPM's binaries at image build — never patch the RPM payload in place.
 - SSH agent: `gcr-ssh-agent.socket` is enabled for all users, so `SSH_AUTH_SOCK` is set in Hyprland sessions too (GNOME's own agent only autostarts under GNOME). Keys still have to be added once — `ssh-add ~/.ssh/id_ed25519`, or `AddKeysToAgent yes` in `~/.ssh/config`.
+- Docker and the rest of the dx tooling no longer ship in the image: upstream folded `bluefin-dx:lts-hwe` into `bluefin-lts:stable`, which restores them per machine with `ujust devmode` (one reboot).
 
-_Last updated: 2026-08-18_
+_Last updated: 2026-09-15_
 
 ## Package pipeline (COPR)
 

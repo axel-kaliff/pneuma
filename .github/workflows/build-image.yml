@@ -73,10 +73,26 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - name: Test-install the Omarchy runtime set against the base image
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # Read the base straight from the Containerfile: sync-base-image.yml
+      # moves that pin on its own, and a second copy of the ref here would
+      # silently depsolve against a base the image no longer builds on.
+      - name: Resolve the pinned base image
+        id: base
         shell: bash
         run: |
-          podman run --rm ghcr.io/ublue-os/bluefin-dx:lts-hwe bash -c '
+          ref=$(grep -oP '^FROM \K\S+@sha256:[0-9a-f]{64}' Containerfile)
+          echo "Base image: ${ref}"
+          echo "ref=${ref}" >> "${GITHUB_OUTPUT}"
+
+      - name: Test-install the Omarchy runtime set against the base image
+        shell: bash
+        env:
+          BASE_REF: ${{ steps.base.outputs.ref }}
+        run: |
+          podman run --rm "${BASE_REF}" bash -c '
             set -euo pipefail
             for repo in akaliff/pneuma yselkowitz/wlroots-epel; do
               id="copr-${repo//\//-}"
