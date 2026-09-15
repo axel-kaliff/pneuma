@@ -1,0 +1,117 @@
+---
+name: Sync base image
+
+# Keeps the Containerfile's base-image digest pin level with the tag it names.
+#
+# The pin is what makes a pneuma build reproducible, but a pin nobody moves is
+# a frozen OS: ublue-os/bluefin-dx:lts-hwe sat unrebuilt from 2026-07-14 while
+# every pneuma build kept layering onto it. This job resolves the tag daily,
+# rewrites the pin when upstream has rebuilt, and dispatches a build so the
+# new base actually reaches :stable-testing.
+#
+# A push made with GITHUB_TOKEN cannot trigger build-image.yml's push trigger,
+# but workflow_dispatch is the documented exception to that rule, so the build
+# is requested explicitly. To undo a bad base, revert the chore(base) commit.
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: sync-base-image
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Bump the base image pin
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Resolve the tag behind the pin
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          pinned=$(grep -oP '^FROM \K\S+@sha256:[0-9a-f]{64}' Containerfile)
+          repo_tag="${pinned%@*}"
+          old_digest="${pinned#*@}"
+          echo "Pinned: ${repo_tag}@${old_digest}"
+
+          if [[ "${repo_tag}" != ghcr.io/* ]]; then
+            echo "::error::Only ghcr.io bases are resolvable here, got ${repo_tag}"
+            exit 1
+          fi
+          path="${repo_tag#ghcr.io/}"
+          name="${path%:*}"
+          tag="${path##*:}"
+
+          token=$(curl -fsSL --max-time 30 \
+            "https://ghcr.io/token?scope=repository:${name}:pull" | jq -er .token)
+
+          new_digest=$(curl -fsSI --max-time 30 \
+            -H "Authorization: Bearer ${token}" \
+            -H "Accept: application/vnd.oci.image.index.v1+json" \
+            -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json" \
+            -H "Accept: application/vnd.oci.image.manifest.v1+json" \
+            -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
+            "https://ghcr.io/v2/${name}/manifests/${tag}" \
+            | grep -i '^docker-content-digest:' | cut -d' ' -f2 | tr -d '\r')
+
+          if [[ ! "${new_digest}" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::${repo_tag} did not resolve to a digest (got '${new_digest}')"
+            exit 1
+          fi
+          echo "Upstream: ${repo_tag}@${new_digest}"
+
+          {
+            echo "repo_tag=${repo_tag}"
+            echo "old_digest=${old_digest}"
+            echo "new_digest=${new_digest}"
+            echo "changed=$([[ "${new_digest}" == "${old_digest}" ]] && echo false || echo true)"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Commit the new pin
+        if: steps.resolve.outputs.changed == 'true'
+        shell: bash
+        env:
+          REPO_TAG: ${{ steps.resolve.outputs.repo_tag }}
+          OLD_DIGEST: ${{ steps.resolve.outputs.old_digest }}
+          NEW_DIGEST: ${{ steps.resolve.outputs.new_digest }}
+        run: |
+          set -euo pipefail
+          sed -i "s|^FROM ${REPO_TAG}@${OLD_DIGEST}$|FROM ${REPO_TAG}@${NEW_DIGEST}|" Containerfile
+          git diff --exit-code Containerfile && { echo "::error::pin rewrite matched nothing"; exit 1; }
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(base): ${REPO_TAG##*/} ${NEW_DIGEST:7:12}" Containerfile
+          git push
+
+      - name: Build on the new base
+        if: steps.resolve.outputs.changed == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run build-image.yml --ref main
+
+      - name: Summary
+        shell: bash
+        env:
+          REPO_TAG: ${{ steps.resolve.outputs.repo_tag }}
+          NEW_DIGEST: ${{ steps.resolve.outputs.new_digest }}
+          CHANGED: ${{ steps.resolve.outputs.changed }}
+        run: |
+          if [[ "${CHANGED}" == "true" ]]; then
+            echo "Bumped ${REPO_TAG} to ${NEW_DIGEST} and requested a build." >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo "${REPO_TAG} is already pinned to the current digest." >> "${GITHUB_STEP_SUMMARY}"
+          fi
