@@ -84,6 +84,7 @@ dnf -y install \
     fprintd \
     alsa-utils \
     pipewire-utils \
+    sound-theme-freedesktop \
     btop \
     fastfetch \
     jq \
