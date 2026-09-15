@@ -79,19 +79,11 @@
       "automerge": false
     },
     {
-      "description": "Keep the base image digest fresh immediately",
+      "description": "The base image pin belongs to sync-base-image.yml, which bumps it daily and dispatches the build",
       "matchDepNames": [
-        "ghcr.io/ublue-os/bluefin-dx"
+        "ghcr.io/projectbluefin/bluefin-lts"
       ],
-      "matchUpdateTypes": [
-        "digest",
-        "pinDigest",
-        "pin"
-      ],
-      "automerge": true,
-      "schedule": [
-        "at any time"
-      ]
+      "enabled": false
     }
   ]
 }
