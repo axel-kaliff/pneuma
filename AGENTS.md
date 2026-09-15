@@ -100,7 +100,7 @@ bootc host verification and cannot satisfy the gate). It reports
 12. **ALWAYS** follow numbered script convention: `10-*.sh`, `20-*.sh`, `30-*.sh`
 13. **ALWAYS** validate that new Flatpak IDs exist on Flathub before adding
 14. **NEVER** modify validation workflows without understanding impact on PR checks
-15. **NEVER** patch the omarchy/omedora RPM payload in place — `omarchy-*` behavior changes go in `build/files/usr/share/pneuma/omarchy-overrides/bin/`, installed over the RPM binaries by `build/37-omarchy-config.sh`
+15. **NEVER** patch the omarchy/omedora RPM payload in place — `omarchy-*` behavior changes go in `build/files/usr/share/pneuma/omarchy-overrides/bin/`, installed over the RPM binaries by `build/37-pneuma-config.sh`
 
 ## Analysis vs Implementation
 

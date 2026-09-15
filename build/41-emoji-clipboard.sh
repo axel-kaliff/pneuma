@@ -17,7 +17,7 @@ set -eoux pipefail
 #   ~0.35s after the paste, so a picked emoji can never be pasted manually.
 #
 # Overridden with a version that copies persistently and keeps the
-# best-effort Shift+Insert. Runs after 36-omarchy-payload.sh so the RPM
+# best-effort Shift+Insert. Runs after 36-pneuma-payload.sh so the RPM
 # file exists to be replaced.
 ###############################################################################
 

@@ -10,7 +10,7 @@ set -eoux pipefail
 #   - GNOME (from the bluefin-lts base) stays installed; the Omarchy and GNOME
 #     sessions coexist and are both offered by SDDM and GDM.
 #   - SDDM becomes the default display manager (Omarchy v4's own login flow);
-#     GDM stays installed and switchable via ujust omarchy-greeter gnome.
+#     GDM stays installed and switchable via ujust pneuma-greeter gnome.
 #   - Ghostty (built in script 30) stays the default terminal; kitty is the
 #     fallback (EL10 has no foot).
 #   - Update subsystem is remapped to bootc/brew/flatpak via the overrides
@@ -55,7 +55,7 @@ echo "::group:: Switch Display Manager to SDDM"
 
 # Both gdm.service and sddm.service alias display-manager.service; release
 # the alias held by the base image first or the enable fails.
-# Switch back at runtime with: ujust omarchy-greeter gnome
+# Switch back at runtime with: ujust pneuma-greeter gnome
 systemctl disable gdm.service
 systemctl enable sddm.service
 
@@ -148,7 +148,7 @@ for unit in /usr/lib/systemd/user/omarchy-*.service; do
     dropin_dir="${unit}.d"
     mkdir -p "${dropin_dir}"
     cat > "${dropin_dir}/50-pneuma-hyprland-only.conf" << 'EOF'
-# Installed by pneuma (build/37-omarchy-config.sh):
+# Installed by pneuma (build/37-pneuma-config.sh):
 # don't start Omarchy session services under GNOME.
 [Unit]
 ConditionEnvironment=XDG_CURRENT_DESKTOP=Hyprland
@@ -190,7 +190,7 @@ echo "::group:: Default Keyboard Layouts (US + Swedish)"
 
 # omedora-settings ships the skel input.lua fully commented; append an active
 # override so every user seeded from skel gets both layouts. Existing users
-# keep their own copy (pneuma-omarchy-user-setup never clobbers).
+# keep their own copy (pneuma-skel-seed never clobbers).
 #
 # No grp:* option here on purpose. Every Alt-based group toggle -- including
 # grp:alts_toggle, which this used to set -- rebinds <RALT> to plain Alt_R,
@@ -319,13 +319,14 @@ echo "::endgroup::"
 echo "::group:: Install Pneuma Omarchy Integration"
 
 # First-boot per-user config seeding + conditional SDDM autologin
-install -Dm755 /ctx/build/files/usr/libexec/pneuma-omarchy-user-setup /usr/libexec/pneuma-omarchy-user-setup
-install -Dm755 /ctx/build/files/usr/libexec/pneuma-omarchy-autologin /usr/libexec/pneuma-omarchy-autologin
+install -Dm755 /ctx/build/files/usr/libexec/pneuma-skel-seed /usr/libexec/pneuma-skel-seed
+install -Dm755 /ctx/build/files/usr/libexec/pneuma-greeter-setup /usr/libexec/pneuma-greeter-setup
 install -Dm755 /ctx/build/files/usr/libexec/pneuma-sddm-autologin /usr/libexec/pneuma-sddm-autologin
-install -Dm644 /ctx/build/files/usr/lib/systemd/system/pneuma-omarchy-setup.service /usr/lib/systemd/system/pneuma-omarchy-setup.service
-install -Dm644 /ctx/build/files/usr/lib/systemd/system/pneuma-omarchy-autologin.service /usr/lib/systemd/system/pneuma-omarchy-autologin.service
-systemctl enable pneuma-omarchy-setup.service
-systemctl enable pneuma-omarchy-autologin.service
+install -Dm644 /ctx/build/files/usr/lib/systemd/system/pneuma-skel-seed.service /usr/lib/systemd/system/pneuma-skel-seed.service
+install -Dm644 /ctx/build/files/usr/lib/systemd/system/pneuma-greeter-setup.service /usr/lib/systemd/system/pneuma-greeter-setup.service
+install -Dm644 /ctx/build/files/usr/lib/tmpfiles.d/pneuma-unit-rename.conf /usr/lib/tmpfiles.d/pneuma-unit-rename.conf
+systemctl enable pneuma-skel-seed.service
+systemctl enable pneuma-greeter-setup.service
 
 # firewalld service definition for LocalSend (Omarchy expects ufw; pneuma
 # keeps firewalld). Enable with: firewall-cmd --permanent --add-service=localsend
