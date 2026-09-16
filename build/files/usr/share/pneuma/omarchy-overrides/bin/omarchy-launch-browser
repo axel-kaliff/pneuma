@@ -4,7 +4,7 @@
 # omarchy:args=[url]
 #
 # Pneuma override (installed over the omedora RPM binary by
-# build/37-omarchy-config.sh): GUI apps on pneuma are Flatpaks, but the
+# build/37-pneuma-config.sh): GUI apps on pneuma are Flatpaks, but the
 # upstream script only searches {~/.local,~/.nix-profile,/usr}/share for the
 # default browser's desktop entry and execs its first Exec token — both fail
 # for Flatpak browsers (entries live in the flatpak export dirs; Exec wraps

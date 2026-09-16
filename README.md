@@ -14,8 +14,8 @@ Instead, you create your own OS repository based on this template, allowing full
 
 Pneuma is built on [`ghcr.io/projectbluefin/bluefin-lts`](https://docs.projectbluefin.io/lts/) (CentOS Stream 10 bootc with GNOME, GDM, Homebrew, Flatpak, ujust, and uupd auto-updates) and layers the Omarchy experience on top. It derives from [axel-kaliff/lateralus](https://github.com/axel-kaliff/lateralus) (a finpilot-template image), rebased from Fedora onto Bluefin LTS:
 
-- **Omarchy v4 desktop** (default) — Hyprland + the Quickshell-based Omarchy shell, themes, keybindings, and `omarchy` CLI from the [omedora](https://github.com/AndrewGaspar/omedora) project (MIT Fedora adaptation of [basecamp/omarchy](https://github.com/basecamp/omarchy)). The omedora COPR only builds for Fedora, so pneuma rebuilds the pinned Hyprland 0.56 stack + payload specs for EL10 in the [akaliff/pneuma COPR](https://copr.fedorainfracloud.org/coprs/akaliff/pneuma/) (chroot `epel-10-x86_64`, specs on the [`pneuma-el10` branch](https://github.com/axel-kaliff/omedora/tree/pneuma-el10) of the omedora fork), with leaf Wayland tools from `yselkowitz/wlroots-epel`. Image builds just `dnf install` the prebuilt RPMs (`build/36-omarchy-payload.sh`). See [Omarchy on pneuma](#omarchy-on-pneuma).
-- **GNOME desktop** — vanilla Bluefin LTS GNOME stays installed as a second session; pick it at the login screen or make GDM the greeter again with `ujust omarchy-greeter gnome`.
+- **Omarchy v4 desktop** (default) — Hyprland + the Quickshell-based Omarchy shell, themes, keybindings, and `omarchy` CLI from the [omedora](https://github.com/AndrewGaspar/omedora) project (MIT Fedora adaptation of [basecamp/omarchy](https://github.com/basecamp/omarchy)). The omedora COPR only builds for Fedora, so pneuma rebuilds the pinned Hyprland 0.56 stack + payload specs for EL10 in the [akaliff/pneuma COPR](https://copr.fedorainfracloud.org/coprs/akaliff/pneuma/) (chroot `epel-10-x86_64`, specs on the [`pneuma-el10` branch](https://github.com/axel-kaliff/omedora/tree/pneuma-el10) of the omedora fork), with leaf Wayland tools from `yselkowitz/wlroots-epel`. Image builds just `dnf install` the prebuilt RPMs (`build/36-pneuma-payload.sh`). See [Omarchy on pneuma](#omarchy-on-pneuma).
+- **GNOME desktop** — vanilla Bluefin LTS GNOME stays installed as a second session; pick it at the login screen or make GDM the greeter again with `ujust pneuma-greeter gnome`.
 - **Ghostty** built from source, the default terminal in both desktops (kitty is the visible fallback; foot ships from `yselkowitz/wlroots-epel` to satisfy omedora's dependency).
 - **Runtime app delivery**: CLI tools via Homebrew (`custom/brew/default.Brewfile`), GUI apps via Flatpak (`custom/flatpaks/install.list`), both installed by the base image's first-boot services. Exceptions live in the image as RPMs only when they must (compositor stack, portals, script dependencies like `gum`/`jq`/`fzf`/`starship`, and Chromium — Flatpak Chromium breaks Omarchy's per-webapp window classes).
 - **Pneuma branding** — the "Pneuma Breath" Plymouth splash (a breathing core with rippling breath-waves), matching GRUB theme, and os-release identity.
@@ -29,16 +29,16 @@ The Omarchy *experience* with cloud-native *mechanics*:
 | `omarchy-update` (pacman + AUR + snapper snapshot) | `omarchy update` → brew upgrade + flatpak update + `bootc upgrade` (also: `ujust update-all`, the base's uupd auto-update timer) |
 | snapper snapshots + limine boot menu rollback | `bootc rollback` (previous deployment stays on the boot menu) |
 | `omarchy-pkg-add` / AUR installs | `brew install` (CLI) / `flatpak install` (GUI) / image rebuild (system) |
-| SDDM autologin written by the installer | `pneuma-omarchy-autologin.service`: auto-enables on single-user LUKS machines (the passphrase is the auth boundary); otherwise the SDDM greeter shows both Omarchy and GNOME sessions |
-| configs copied at install time | seeded from `/etc/skel` by `pneuma-omarchy-setup.service` — **never overwrites existing files**, so your stowed dotfiles always win |
+| SDDM autologin written by the installer | `pneuma-greeter-setup.service`: auto-enables on single-user LUKS machines (the passphrase is the auth boundary); otherwise the SDDM greeter shows both Omarchy and GNOME sessions |
+| configs copied at install time | seeded from `/etc/skel` by `pneuma-skel-seed.service` — **never overwrites existing files**, so your stowed dotfiles always win |
 
 Handy commands:
 
-- `ujust omarchy-autologin` / `ujust omarchy-autologin-off` — toggle seamless login
-- `ujust omarchy-greeter <sddm|gnome>` — switch display manager (reboot to apply)
-- `ujust omarchy-setup` — re-seed Omarchy defaults for your user (non-destructive)
-- `ujust omarchy-reset-configs` — reset to shipped defaults (destructive, confirms; re-link your dotfiles with `ujust setup` afterwards)
-- `ujust omarchy-localsend-firewall` — open LocalSend's port in firewalld
+- `ujust pneuma-autologin` / `ujust pneuma-autologin-off` — toggle seamless login
+- `ujust pneuma-greeter <sddm|gnome>` — switch display manager (reboot to apply)
+- `ujust pneuma-setup` — re-seed the Pneuma desktop defaults for your user (non-destructive)
+- `ujust pneuma-reset-configs` — reset to shipped defaults (destructive, confirms; re-link your dotfiles with `ujust setup` afterwards)
+- `ujust pneuma-localsend-firewall` — open LocalSend's port in firewalld
 
 Notes:
 
@@ -55,7 +55,7 @@ _Last updated: 2026-09-15_
 
 Nothing Hyprland/omarchy-related exists for CentOS Stream 10 in EPEL or any established
 COPR, so pneuma maintains its own package pipeline. **No compiling happens in the image
-build** — `build/36-omarchy-payload.sh` is a single `dnf install` of prebuilt RPMs.
+build** — `build/36-pneuma-payload.sh` is a single `dnf install` of prebuilt RPMs.
 
 ### Where packages come from
 
@@ -63,12 +63,12 @@ build** — `build/36-omarchy-payload.sh` is a single `dnf install` of prebuilt 
 | --- | --- | --- |
 | [akaliff/pneuma COPR](https://copr.fedorainfracloud.org/coprs/akaliff/pneuma/) (chroot `epel-10-x86_64`) | hyprland 0.56 + the hypr* library chain, xdg-desktop-portal-hyprland, quickshell, uwsm, starship, omedora, omedora-settings, glaze, libxkbcommon ≥ 1.11, muParser, keyd | built from the [`pneuma-el10` branch](https://github.com/axel-kaliff/omedora/tree/pneuma-el10) of the omedora fork |
 | [yselkowitz/wlroots-epel](https://copr.fedorainfracloud.org/coprs/yselkowitz/wlroots-epel/) (`epel-10`) | foot, grim, slurp, wtype, brightnessctl | trusted Fedora maintainer; RPMs baked into the image are the de-facto pin |
-| EPEL 10 / CS10 BaseOS+AppStream+CRB | everything in `build/35-omarchy-packages.sh` | chromium, sddm, mpv, nautilus-python, tesseract, fonts, … |
+| EPEL 10 / CS10 BaseOS+AppStream+CRB | everything in `build/35-pneuma-packages.sh` | chromium, sddm, mpv, nautilus-python, tesseract, fonts, … |
 
 `libxkbcommon` is the **only base-library override** (CS10 ships 1.7.0; hyprland 0.56
 needs ≥ 1.11 — a soname-stable additive upgrade). CS10 already carries wayland 1.25,
 wayland-protocols 1.49, and libinput ≥ 1.29, which is asserted post-install in
-`build/36-omarchy-payload.sh`. When CS10 rebases libxkbcommon past 1.11, delete the
+`build/36-pneuma-payload.sh`. When CS10 rebases libxkbcommon past 1.11, delete the
 package from the COPR and the override disappears.
 
 ### How the COPR is fed
@@ -124,13 +124,13 @@ both; a subset of spec names rebuilds just those, still in canonical order.)
 3. **Gate before the image**: the `depsolve-check` CI job (also run weekly by cron)
    transaction-tests the full runtime set inside the real base image (~3 min), so COPR
    breakage surfaces before a 30-minute image build fails.
-4. **Rebuild the image** — `build/36-omarchy-payload.sh` installs whatever the COPR
+4. **Rebuild the image** — `build/36-pneuma-payload.sh` installs whatever the COPR
    serves; the build manifest at `/usr/share/pneuma/omarchy-build-manifest.txt` records
    exactly what shipped.
 
 Keep the omedora pin and the hyprland version moving in lockstep: the omarchy payload's
 Lua configs must match the hyprland built from the same monorepo commit (the ≥ 0.56
-version guard in `build/37-omarchy-config.sh` enforces the floor at image build).
+version guard in `build/37-pneuma-config.sh` enforces the floor at image build).
 
 ## Guided Copilot Mode
 

@@ -84,5 +84,5 @@ changes and the bar still updates.
 Omarchy 4.0.0.alpha shipped a notification service that could not load on
 Qt 6.10 (`var transient`, a reserved word), which left the desktop with no
 notification daemon at all. Pneuma patches that in the image build
-(`build/38-omarchy-qml-patches.sh`) and the fix is upstream in the pneuma-el10
+(`build/38-pneuma-qml-patches.sh`) and the fix is upstream in the pneuma-el10
 omedora fork.

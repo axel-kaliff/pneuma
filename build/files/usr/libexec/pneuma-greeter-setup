@@ -17,9 +17,9 @@
 #   2. SDDM is the enabled display manager
 #   3. the root filesystem sits on a LUKS-encrypted device
 #
-# Unit-level guards (pneuma-omarchy-autologin.service): never runs if
+# Unit-level guards (pneuma-greeter-setup.service): never runs if
 # /etc/sddm.conf.d/autologin.conf already exists (user/ujust decision wins)
-# or if /etc/pneuma/no-autologin opts out (ujust omarchy-autologin-off).
+# or if /etc/pneuma/no-autologin opts out (ujust pneuma-autologin-off).
 set -euo pipefail
 
 human_users=()
@@ -32,8 +32,8 @@ while IFS=: read -r user _ uid _ _ home _; do
 done < /etc/passwd
 
 if [ "${#human_users[@]}" -ne 1 ]; then
-    echo "Found ${#human_users[@]} human users — Omarchy greeter state needs exactly 1, skipping."
-    echo "(The Omarchy SDDM theme is single-user; multi-user machines: ujust omarchy-greeter gnome)"
+    echo "Found ${#human_users[@]} human users — Pneuma greeter state needs exactly 1, skipping."
+    echo "(The SDDM greeter theme is single-user; multi-user machines: ujust pneuma-greeter gnome)"
     exit 0
 fi
 

@@ -1,14 +1,14 @@
 [Unit]
-Description=Seed Omarchy per-user configs for existing users
+Description=Seed Pneuma desktop configs for existing users
 # Pure file copies from /etc/skel — deliberately independent of the
-# base's brew-setup so the Omarchy session is complete before the first
+# base's brew-setup so the Pneuma session is complete before the first
 # login (pneuma-user-setup needs brew's stow and can't run pre-greeter).
 After=local-fs.target
-Before=display-manager.service pneuma-omarchy-autologin.service
+Before=display-manager.service pneuma-greeter-setup.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/libexec/pneuma-omarchy-user-setup
+ExecStart=/usr/libexec/pneuma-skel-seed
 RemainAfterExit=yes
 StandardOutput=journal
 StandardError=journal

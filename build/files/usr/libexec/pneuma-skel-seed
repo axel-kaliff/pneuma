@@ -1,7 +1,7 @@
 #!/usr/bin/bash
-# Seed Omarchy per-user configs for EXISTING human users.
+# Seed Pneuma desktop configs for EXISTING human users.
 #
-# /etc/skel (composed by the omedora-settings RPM + build/37-omarchy-config.sh)
+# /etc/skel (composed by the omedora-settings RPM + build/37-pneuma-config.sh)
 # only reaches users created after this image landed; this script replays it
 # for users that already exist — with strict no-clobber semantics:
 #
@@ -10,13 +10,13 @@
 #     ghostty, lazygit, starship.toml, .bashrc, nvim, ...) win every collision.
 #     Plain cp -f onto a stow symlink would write THROUGH it into the user's
 #     dotfiles repo, so overwriting is never an option here.
-#   - Omarchy-only trees (hypr/, omarchy/, btop/, tmux/, autostart/, ...) land
+#   - Desktop-only trees (hypr/, omarchy/, btop/, tmux/, autostart/, ...) land
 #     untouched by stow and seed cleanly.
 #   - Migration markers (~/.local/state/omarchy) seed on first provisioning
 #     only. On image updates they are left alone so omarchy-migrate runs any
 #     newly shipped migrations at next login.
 #
-# Runs as a system oneshot (pneuma-omarchy-setup.service) before the
+# Runs as a system oneshot (pneuma-skel-seed.service) before the
 # display manager — pure file copies, deliberately independent of brew.
 # Re-runs when the image version changes (stamp), adding only NEW skel paths.
 set -eou pipefail
@@ -41,7 +41,7 @@ while [ $# -gt 0 ]; do
         ONLY_USER="${1:?--user requires a name}"
         ;;
     *)
-        echo "Usage: pneuma-omarchy-user-setup [--force] [--user NAME]" >&2
+        echo "Usage: pneuma-skel-seed [--force] [--user NAME]" >&2
         exit 1
         ;;
     esac
@@ -65,13 +65,13 @@ seed_entry() {
 setup_user() {
     local user="$1" home="$2"
     local state_dir="${home}/.local/state/omarchy"
-    local stamp="${state_dir}/.pneuma-omarchy-setup"
+    local stamp="${state_dir}/.pneuma-skel-seed"
 
     if [ "$FORCE" -eq 0 ] && [ -f "$stamp" ] && [ "$(cat "$stamp")" = "$IMAGE_ID" ]; then
-        echo "  User ${user}: omarchy configs current for ${IMAGE_ID}, skipping."
+        echo "  User ${user}: Pneuma desktop configs current for ${IMAGE_ID}, skipping."
         return
     fi
-    echo "  Seeding omarchy configs for ${user} (${IMAGE_ID})..."
+    echo "  Seeding Pneuma desktop configs for ${user} (${IMAGE_ID})..."
 
     local entry rel
     # Top-level skel entries; .config and .local get finer-grained treatment

@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-# Manage SDDM autologin for the Omarchy session (seamless login).
+# Manage SDDM autologin for the Pneuma session (seamless login).
 #
 #   pneuma-sddm-autologin enable <user>   write /etc/sddm.conf.d/autologin.conf
 #   pneuma-sddm-autologin disable         remove it
@@ -20,7 +20,7 @@ session_file() {
             return 0
         fi
     done
-    echo "ERROR: no Omarchy wayland session found in /usr/share/wayland-sessions" >&2
+    echo "ERROR: no Pneuma wayland session found in /usr/share/wayland-sessions" >&2
     return 1
 }
 

@@ -16,7 +16,7 @@ This is an immutable bootc image — packages can't be installed at runtime.
 
   CLI tools:  brew install <name>       (or add to the image Brewfile)
   GUI apps:   flatpak install <name>    (or add to the image flatpak list)
-  System:     add to build/35-omarchy-packages.sh and rebuild the image
+  System:     add to build/35-pneuma-packages.sh and rebuild the image
 
 Requested and not present: $(for p in "$@"; do rpm -q "$p" &> /dev/null || printf '%s ' "$p"; done)
 EOF

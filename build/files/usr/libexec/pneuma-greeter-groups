@@ -8,7 +8,7 @@
 # entries exist in /etc/group first.
 #
 # sddm's greeter normally gets DRM access via PAM/logind, but its session is
-# Hyprland here (see build/37-omarchy-config.sh) — this makes it explicit.
+# Hyprland here (see build/37-pneuma-config.sh) — this makes it explicit.
 
 set -euo pipefail
 
