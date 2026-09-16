@@ -9,7 +9,7 @@
 # Everything else (skills symlinks, xdg dirs, bookmarks, theme seed, keyring,
 # chromium native hosts, hardware fixes, migration markers) is upstream logic.
 
-# omarchy:summary=Finalize Omarchy user setup (runtime tweaks /etc/skel can't do)
+# omarchy:summary=Finalize Pneuma user setup (runtime tweaks /etc/skel can't do)
 # omarchy:hidden=true
 
 set -euo pipefail

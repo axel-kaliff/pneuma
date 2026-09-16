@@ -17,7 +17,7 @@ set -eoux pipefail
 #     the bar widget would run one timer per screen and fire duplicate
 #     completion notifications on any multi-monitor setup.
 #   - Only /etc/skel's shell.json gains the bar entry. Existing users keep
-#     whatever bar layout they already have (pneuma-omarchy-user-setup is
+#     whatever bar layout they already have (pneuma-skel-seed is
 #     strictly no-clobber); they opt in with `omarchy plugin enable
 #     pneuma.pomodoro`.
 ###############################################################################

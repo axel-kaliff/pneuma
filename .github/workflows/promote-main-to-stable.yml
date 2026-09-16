@@ -35,7 +35,7 @@ concurrency:
 jobs:
   promote:
     name: Promote main to stable
-    uses: projectbluefin/actions/.github/workflows/reusable-promote-squash.yml@eb4c546389f19ad9e42f1af052623de73c620ebb # v1
+    uses: projectbluefin/actions/.github/workflows/reusable-promote-squash.yml@6680f74bf167fa12f498db1c1e9e1183c0415bb9 # v1
     with:
       variants: >-
         [{"image":"${{ github.event.repository.name }}"}]
@@ -48,4 +48,13 @@ jobs:
       # and verifies its cosign signature. Enable the OPTIONAL keyless signing
       # step in build-image.yml for the gate to report release/ready.
       run_e2e: false
+      # axel-kaliff is a user account, not an org, so the conventional
+      # <owner>/maintainers team this would request cannot exist. The reviewer
+      # request is not optional inside the reusable: its GraphQL call fails the
+      # whole "build and maintain the PR" step, which skips the release gate,
+      # which leaves the promotion PR unlabelled and therefore unreleasable.
+      # Only the run that *creates* a PR hits it, which is why refresh runs
+      # looked green. The input does not exist in the eb4c546 pin the other
+      # callers use, which is why this one alone is pinned further forward.
+      request_reviewer: false
     secrets: inherit

@@ -58,7 +58,7 @@ greeter is single-user and single-session by design (`Main.qml`): it renders a
 password box only — **no username field and no session picker**. It logs in as
 `userModel.lastUser` into the session whose name matches `uwsm`.
 
-A first-boot service (`pneuma-omarchy-autologin`) seeds
+A first-boot service (`pneuma-greeter-setup`) seeds
 `/var/lib/sddm/state.conf` with your user and the Omarchy session so the
 greeter has someone to authenticate. This was verified working in the VM, on a
 machine with exactly one human user.
@@ -68,12 +68,12 @@ to a TTY and fall back to GNOME:
 
 ```
 Ctrl+Alt+F3
-ujust omarchy-greeter gnome
+ujust pneuma-greeter gnome
 systemctl reboot
 ```
 
 GDM *does* have a session picker (gear icon), so from there you can choose
-either GNOME or Pneuma. Switch back with `ujust omarchy-greeter sddm`.
+either GNOME or Pneuma. Switch back with `ujust pneuma-greeter sddm`.
 
 Autologin is only enabled when all of: exactly one human user, SDDM is the
 display manager, and the root filesystem is LUKS-encrypted. Otherwise you get

@@ -63,7 +63,7 @@ echo "::endgroup::"
 echo "::group:: Rebrand Omedora Desktop as Pneuma"
 
 # The omedora payload brands the user-visible desktop as "Omedora". Rebrand
-# the spots users actually see; runs after 36-omarchy-payload.sh so the RPM
+# the spots users actually see; runs after 36-pneuma-payload.sh so the RPM
 # files exist.
 
 # Screensaver text art (ttfx animates ~/.config/omarchy/branding/screensaver.txt;
