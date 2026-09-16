@@ -16,5 +16,5 @@ if ((${#installed[@]} == 0)); then
 fi
 
 echo "Cannot remove from a running bootc image: ${installed[*]}" >&2
-echo "Remove them from build/35-omarchy-packages.sh and rebuild the image." >&2
+echo "Remove them from build/35-pneuma-packages.sh and rebuild the image." >&2
 exit 1

@@ -1,0 +1,18 @@
+[Unit]
+Description=Seed SDDM greeter state; enable autologin on single-user LUKS systems
+After=pneuma-skel-seed.service
+Before=display-manager.service
+# An existing autologin.conf (user/ujust decision) always wins; the opt-out
+# marker is written by `ujust pneuma-autologin-off`.
+ConditionPathExists=!/etc/sddm.conf.d/autologin.conf
+ConditionPathExists=!/etc/pneuma/no-autologin
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/pneuma-greeter-setup
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=graphical.target
