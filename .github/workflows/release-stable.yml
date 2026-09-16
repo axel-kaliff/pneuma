@@ -1,13 +1,18 @@
 ---
 name: Release stable
 
-# Merges the open main -> stable promotion PR on a weekly cadence and builds
-# :stable from it.
+# Merges the open main -> stable promotion PR and builds :stable from it, as
+# soon as main has a green image build to promote.
 #
 # promote-main-to-stable.yml already opens the PR and asks for auto-merge, but
 # GitHub refuses to enable auto-merge on a PR nothing gates: `stable` requires
 # no status checks and no reviews, so every promotion PR sat until someone
 # merged it by hand — :stable was 13 days behind main when this was added.
+#
+# The trigger is the main image build rather than the promotion workflow: the
+# promotion PR is labelled within a minute of a push, while the image that
+# proves the tree builds takes ~13 more. Waiting for the build means :stable is
+# only ever promoted from a tree that produced a signed :testing image.
 #
 # The release gate labels the PR release/ready (or release/blocked); this job
 # merges only a ready one, and `do-not-merge` on the PR holds the release for
@@ -18,8 +23,9 @@ name: Release stable
 # promotion branch is rebuilt from origin/stable on every run.
 
 on:
-  schedule:
-    - cron: "0 4 * * 4" # Thursday 04:00 UTC, matching bluefin-lts's cadence
+  workflow_run:
+    workflows: ["Build and Push Image"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -34,6 +40,13 @@ concurrency:
 jobs:
   release:
     name: Promote main to stable
+    # A build of `stable` itself must not promote anything, and a red build has
+    # nothing worth promoting. workflow_dispatch carries no workflow_run payload,
+    # so a manual run passes both tests on the empty string.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:

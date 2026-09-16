@@ -182,7 +182,7 @@ Use the `finpilot-maintain` and `finpilot-ci` skills, then:
 - Automated builds via GitHub Actions on every commit
 - Renovate (GitHub App) for automated dependency updates
 - `sync-base-image.yml` repins the base image digest daily and builds on it
-- `release-stable.yml` merges the promotion PR and publishes `:stable` every Thursday
+- `release-stable.yml` merges the promotion PR and publishes `:stable` as soon as main has a green image build
 - Automatic cleanup of old images (90+ days) to keep it tidy
 - Pull request workflow - test changes before merging to main
   - PRs build and validate before merge
