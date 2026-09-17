@@ -18,13 +18,11 @@ set -eoux pipefail
 #                      fallback terminal, Ghostty stays default)
 #   pamixer         -> omarchy v4 audio flows use wireplumber's wpctl (in base)
 #   yt-dlp          -> brew (custom/brew/default.Brewfile)
-#   yaru-icon-theme -> akaliff/pneuma COPR in script 36. Was dropped here as
-#                      a papercut; it is not one. Every omarchy theme's
-#                      icons.theme names a Yaru-* variant, so without the
-#                      package icon-theme points at a directory that does not
-#                      exist — GTK4 cannot read its index.theme, never sees
-#                      Inherits=, and drops to hicolor, skipping Adwaita.
-#                      Measured: 2 of 18 file/folder icons resolved.
+#   yaru-icon-theme -> dropped again, this time with the theme choice pinned.
+#                      Every omarchy theme's icons.theme names a Yaru-* variant
+#                      and an icon-theme that does not resolve fails silently
+#                      at runtime, so script 36 patches the selection itself to
+#                      Adwaita rather than shipping 58 MB of Yaru to satisfy it.
 #   mpv-mpris, imv, sushi, udiskie -> dropped (papercuts only;
 #                      Loupe flatpak covers image viewing)
 #   fcitx5*         -> dropped (not in EL10; its environment.d file would also
@@ -33,14 +31,11 @@ set -eoux pipefail
 #   wtype, brightnessctl, grim, slurp -> yselkowitz/wlroots-epel in script 36
 #   starship        -> pneuma COPR in script 36
 #
-# Known gap, accepted:
-#   adwaita-icon-theme stays at c10s 46.0 while nautilus, gtk4 and libadwaita
-#   come from the jreilly1821/c10s-gnome-49 COPR, which does not carry the
-#   icon theme. With Yaru installed, 35 of the 37 symbolic names nautilus 49
-#   references resolve; the two that do not are cut-symbolic and
-#   cut-large-symbolic, the Adwaita 48 rename of edit-cut-symbolic, carried
-#   by neither Adwaita 46 nor Yaru. They render blank in the context menu.
-#   Revisit if c10s or that COPR ever rebases adwaita-icon-theme past 47.
+# Closed gap:
+#   adwaita-icon-theme came from c10s at 46.0 while nautilus, gtk4 and
+#   libadwaita come from the jreilly1821/c10s-gnome-49 COPR, which does not
+#   carry the icon theme. Fedora 43's noarch 49.0 replaces it at the end of
+#   this script — drop that block if c10s or the COPR ever rebases past 47.
 ###############################################################################
 
 echo "::group:: Install Official-Repo Packages for Omarchy"
@@ -94,6 +89,31 @@ dnf -y install \
     google-noto-naskh-arabic-fonts \
     google-noto-nastaliq-urdu-fonts \
     chromium
+
+echo "::endgroup::"
+
+echo "::group:: Replace the Icon Theme with Adwaita 49"
+
+# c10s ships adwaita-icon-theme 46.0 under GNOME 49 apps: 134 icons keep their
+# GNOME 46 artwork and 12 (battery *-plugged-in, airplane-mode-disabled) do not
+# exist at all, so the bar's charging states render blank. Fedora 43 GA is the
+# only 49 packaging; all three are noarch, and released Fedora trees are frozen
+# so the URLs do not move. 49 split the pre-47 names into a separate
+# AdwaitaLegacy theme that its index.theme inherits, which is why the legacy
+# package has to land in the same transaction.
+F43_PACKAGES=https://dl.fedoraproject.org/pub/fedora/linux/releases/43/Everything/x86_64/os/Packages/a
+
+dnf -y install \
+    "${F43_PACKAGES}/adwaita-icon-theme-49.0-1.fc43.noarch.rpm" \
+    "${F43_PACKAGES}/adwaita-icon-theme-legacy-46.2-4.fc43.noarch.rpm" \
+    "${F43_PACKAGES}/adwaita-cursor-theme-49.0-1.fc43.noarch.rpm"
+
+# Fail the build if the c10s 46.0 package won the transaction after all.
+rpm -q adwaita-icon-theme --qf '%{VERSION}\n' | grep -qE '^(49|[5-9][0-9])' || {
+    echo "ERROR: adwaita-icon-theme is $(rpm -q adwaita-icon-theme --qf '%{VERSION}') — expected 49" >&2
+    exit 1
+}
+[[ -f /usr/share/icons/AdwaitaLegacy/index.theme ]]
 
 echo "::endgroup::"
 
