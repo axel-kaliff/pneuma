@@ -21,6 +21,10 @@ name: Release stable
 # (workflow_dispatch is the documented exception). For the same reason
 # sync-stable-to-main.yml stays quiet after these merges — harmless, since the
 # promotion branch is rebuilt from origin/stable on every run.
+#
+# The weekly build schedule only fires on main. A successful scheduled build
+# also rebuilds :stable, even without a promotion, so it gets the weekly
+# package refresh without waiting for a commit to land.
 
 on:
   workflow_run:
@@ -55,34 +59,42 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
+          TRIGGER_EVENT: ${{ github.event.workflow_run.event }}
         run: |
           set -euo pipefail
 
+          merged=false
           pr=$(gh pr list --state open --base stable \
             --head auto/promote-main-to-stable \
             --json number,labels --jq '.[0] // empty')
           if [[ -z "${pr}" ]]; then
             echo "No open promotion PR — stable already matches main." \
               >> "${GITHUB_STEP_SUMMARY}"
-            exit 0
+          else
+            number=$(jq -r .number <<<"${pr}")
+            labels=$(jq -r '[.labels[].name] | join(",")' <<<"${pr}")
+            echo "PR #${number} labels: ${labels:-none}"
+
+            if [[ ",${labels}," == *",do-not-merge,"* ]]; then
+              echo "PR #${number} is held by the do-not-merge label; not releasing." \
+                >> "${GITHUB_STEP_SUMMARY}"
+            elif [[ ",${labels}," != *",release/ready,"* ]]; then
+              echo "PR #${number} has not passed the release gate; not releasing." \
+                >> "${GITHUB_STEP_SUMMARY}"
+            else
+              gh pr merge "${number}" --squash
+              merged=true
+            fi
           fi
 
-          number=$(jq -r .number <<<"${pr}")
-          labels=$(jq -r '[.labels[].name] | join(",")' <<<"${pr}")
-          echo "PR #${number} labels: ${labels:-none}"
-
-          if [[ ",${labels}," == *",do-not-merge,"* ]]; then
-            echo "PR #${number} is held by the do-not-merge label; not releasing." \
-              >> "${GITHUB_STEP_SUMMARY}"
-            exit 0
+          if [[ "${merged}" == true || "${TRIGGER_EVENT}" == schedule ]]; then
+            gh workflow run build-image.yml --ref stable
+            if [[ "${merged}" == true ]]; then
+              echo "Merged PR #${number} and requested the :stable build." \
+                >> "${GITHUB_STEP_SUMMARY}"
+            fi
+            if [[ "${TRIGGER_EVENT}" == schedule ]]; then
+              echo "Requested the weekly :stable rebuild for the scheduled package refresh." \
+                >> "${GITHUB_STEP_SUMMARY}"
+            fi
           fi
-          if [[ ",${labels}," != *",release/ready,"* ]]; then
-            echo "PR #${number} has not passed the release gate; not releasing." \
-              >> "${GITHUB_STEP_SUMMARY}"
-            exit 0
-          fi
-
-          gh pr merge "${number}" --squash
-          gh workflow run build-image.yml --ref stable
-          echo "Merged PR #${number} and requested the :stable build." \
-            >> "${GITHUB_STEP_SUMMARY}"
