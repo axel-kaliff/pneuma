@@ -6,12 +6,15 @@ name: Sync base image
 # The pin is what makes a pneuma build reproducible, but a pin nobody moves is
 # a frozen OS: ublue-os/bluefin-dx:lts-hwe sat unrebuilt from 2026-07-14 while
 # every pneuma build kept layering onto it. This job resolves the tag daily,
-# rewrites the pin when upstream has rebuilt, and dispatches a build so the
-# new base actually reaches :stable-testing.
+# rewrites the pin when upstream has rebuilt, and opens a self-merging PR so
+# the new base actually reaches :stable-testing.
 #
-# A push made with GITHUB_TOKEN cannot trigger build-image.yml's push trigger,
-# but workflow_dispatch is the documented exception to that rule, so the build
-# is requested explicitly. To undo a bad base, revert the chore(base) commit.
+# main's branch protection rejects direct pushes, so the bump goes through a
+# PR that auto-merges once validate passes. It uses a GitHub App token because
+# GITHUB_TOKEN events trigger neither validate on the PR nor push workflows on
+# main. The App needs Contents and Pull requests read & write, its Client ID in
+# variable APP_CLIENT_ID, and its key in secret APP_PRIVATE_KEY.
+# To undo a bad base, revert the chore(base) commit.
 
 on:
   schedule:
@@ -19,8 +22,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  actions: write
+  contents: read
 
 concurrency:
   group: sync-base-image
@@ -32,8 +34,18 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
+      - name: Create App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Resolve the tag behind the pin
         id: resolve
@@ -79,10 +91,11 @@ jobs:
             echo "changed=$([[ "${new_digest}" == "${old_digest}" ]] && echo false || echo true)"
           } >> "${GITHUB_OUTPUT}"
 
-      - name: Commit the new pin
+      - name: Open a self-merging PR for the new pin
         if: steps.resolve.outputs.changed == 'true'
         shell: bash
         env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           REPO_TAG: ${{ steps.resolve.outputs.repo_tag }}
           OLD_DIGEST: ${{ steps.resolve.outputs.old_digest }}
           NEW_DIGEST: ${{ steps.resolve.outputs.new_digest }}
@@ -93,15 +106,18 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git switch -C auto/sync-base-image
           git commit -m "chore(base): ${REPO_TAG##*/} ${NEW_DIGEST:7:12}" Containerfile
-          git push
+          git push --force origin auto/sync-base-image
 
-      - name: Build on the new base
-        if: steps.resolve.outputs.changed == 'true'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run build-image.yml --ref main
+          pr=$(gh pr list --head auto/sync-base-image --state open \
+            --json number --jq '.[0].number // empty')
+          if [[ -z "${pr}" ]]; then
+            gh pr create --base main --head auto/sync-base-image \
+              --title "chore(base): ${REPO_TAG##*/} ${NEW_DIGEST:7:12}" \
+              --body "Upstream rebuilt ${REPO_TAG}; this moves the pin from ${OLD_DIGEST} to ${NEW_DIGEST}. This PR squash-merges itself once validate passes."
+            gh pr merge auto/sync-base-image --auto --squash
+          fi
 
       - name: Summary
         shell: bash
@@ -111,7 +127,7 @@ jobs:
           CHANGED: ${{ steps.resolve.outputs.changed }}
         run: |
           if [[ "${CHANGED}" == "true" ]]; then
-            echo "Bumped ${REPO_TAG} to ${NEW_DIGEST} and requested a build." >> "${GITHUB_STEP_SUMMARY}"
+            echo "Pushed ${REPO_TAG}@${NEW_DIGEST} to auto/sync-base-image; the PR squash-merges itself once validate passes." >> "${GITHUB_STEP_SUMMARY}"
           else
             echo "${REPO_TAG} is already pinned to the current digest." >> "${GITHUB_STEP_SUMMARY}"
           fi
