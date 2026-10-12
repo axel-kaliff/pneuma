@@ -44,7 +44,7 @@ COPY custom /custom
 # The digest pin records exactly what was built; sync-base-image.yml moves it
 # within a day of each upstream rebuild. To undo a bad base, revert its
 # "chore(base)" commit.
-FROM ghcr.io/projectbluefin/bluefin-lts:stable@sha256:1ad18b85cb50b0973d5c16643dcac344cb226beb98e465e154e715f276eb04d3
+FROM ghcr.io/projectbluefin/bluefin-lts:stable@sha256:baee8880758c641ac346a4104a07c604a09c969796ce3c3024f698a31042e022
 
 # Image identity - these define how bootc, fastfetch, and the ublue ecosystem
 # recognize your image. Change these to match your project name.
