@@ -26,7 +26,7 @@
 #
 # CentOS Stream 10 has dnf4 only (no dnf5).
 #
-# See: https://docs.projectbluefin.io/lts/ for the base image documentation
+# See: https://github.com/ublue-os/bluefin-lts for the base image source
 ###############################################################################
 
 # Context stage - local build scripts and custom files only
@@ -35,16 +35,18 @@ FROM scratch AS ctx
 COPY build /build
 COPY custom /custom
 
-# Base Image - Bluefin LTS (CentOS Stream 10, GNOME + GDM, Fedora CoreOS
-# stable kernel via the akmods coreos-stable stream, so no separate HWE
-# variant is needed). ublue-os/bluefin-dx:lts-hwe, the previous base, stopped
-# building on 2026-07-14 when publishing moved to the projectbluefin org;
-# upstream maps both the lts-hwe and dx tags onto this image, with docker and
-# the rest of the dx tooling restored per-machine by `ujust devmode`.
+# Base Image - Bluefin LTS from ublue-os/bluefin-lts (CentOS Stream 10,
+# GNOME 50 + GDM, Fedora CoreOS stable kernel). The tag selects both: -hwe
+# keeps the CoreOS kernel and -50 keeps GNOME 50 (plain lts-hwe-testing is
+# GNOME 49). Upstream publishes only -testing tags; its lts branch has not
+# been promoted since 2026-06-21. projectbluefin/bluefin-lts:stable, the
+# previous base, stopped rebuilding on 2026-10-12 and was archived as
+# thallium-suite/uranium on 2026-10-15. This is the non-dx image: docker and
+# the dx tooling come per machine from `ujust devmode`.
 # The digest pin records exactly what was built; sync-base-image.yml moves it
 # within a day of each upstream rebuild. To undo a bad base, revert its
 # "chore(base)" commit.
-FROM ghcr.io/projectbluefin/bluefin-lts:stable@sha256:baee8880758c641ac346a4104a07c604a09c969796ce3c3024f698a31042e022
+FROM ghcr.io/ublue-os/bluefin:lts-hwe-testing-50@sha256:75bcd905fc5f352766b5a0acc8c70c9d8c2354a6dc54c6d93fa2eacd9870b06b
 
 # Image identity - these define how bootc, fastfetch, and the ublue ecosystem
 # recognize your image. Change these to match your project name.
@@ -52,7 +54,7 @@ ARG IMAGE_NAME="pneuma"
 ARG IMAGE_VENDOR="axel-kaliff"
 ARG UBLUE_IMAGE_TAG="stable"
 ARG BASE_IMAGE_NAME="bluefin-lts"
-# Keep in sync with the actual base image above (bluefin-lts:stable is c10s);
+# Keep in sync with the actual base image above (it is c10s);
 # the Justfile reads this ARG as the source of truth for the version string.
 ARG CENTOS_MAJOR_VERSION="10"
 ARG VERSION=""
