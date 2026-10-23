@@ -81,7 +81,7 @@
     {
       "description": "The base image pin belongs to sync-base-image.yml, which bumps it daily and dispatches the build",
       "matchDepNames": [
-        "ghcr.io/projectbluefin/bluefin-lts"
+        "ghcr.io/ublue-os/bluefin"
       ],
       "enabled": false
     }
