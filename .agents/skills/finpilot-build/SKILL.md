@@ -97,20 +97,31 @@ EOF
 
 ## Base Image
 
-Default: `quay.io/fedora-ostree-desktops/silverblue:44`
+Pneuma follows `ghcr.io/ublue-os/bluefin:lts-hwe-testing-50`, built by
+`ublue-os/bluefin-lts` from its `main` branch: CentOS Stream 10, GNOME 50,
+Fedora CoreOS stable kernel. `sync-base-image.yml` owns the digest pin;
+`.github/renovate.json` disables Renovate for it.
 
-The major version is controlled by the `FEDORA_MAJOR_VERSION` ARG and the `FROM` line in `Containerfile`. To bump Fedora releases:
-
-1. Update `FEDORA_MAJOR_VERSION` and the `FROM` line in `Containerfile`
-2. Update the Renovate rule that blocks major updates for the base image
-3. Test with `just build` — expect `bootc container lint --fatal-warnings` to catch regressions
+- Tag choice: `-hwe` keeps the CoreOS kernel (plain `lts-testing` ships the
+  el10 6.12 kernel) and `-50` keeps GNOME 50 (plain `lts-hwe-testing` is
+  GNOME 49). No non-testing `lts*` tag exists; the upstream `lts` branch has
+  not been promoted since 2026-06-21.
+- A green sync run does not prove the base is fresh. The job compares
+  digests, so an abandoned upstream reads as "already pinned":
+  `projectbluefin/bluefin-lts:stable` stopped rebuilding on 2026-10-12 and
+  its repo was archived as `thallium-suite/uranium` on 2026-10-15 while sync
+  stayed green. Judge freshness by the upstream image's `Created` date
+  (`skopeo inspect docker://<base-tag>`).
+- Switching the base: change the `FROM` repo:tag and digest and the Renovate
+  `matchDepNames` rule, then compare the kernel (`ostree.linux` label), the
+  GNOME version and the `ujust devmode` recipe against the running image.
 
 ## Common Rationalizations
 
 | Rationalization                                                      | Reality                                                                                                |
 | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | "I'll skip the digest pin and use a floating tag."                   | Non-reproducible builds and breaks supply-chain traceability. The `FROM` line should always be pinned. |
-| "Renovate won't notice a manually pinned digest in `Containerfile`." | Renovate's dockerfile manager tracks `FROM image:tag@sha256:...` in `Containerfile` automatically.     |
+| "Renovate won't notice a manually pinned digest in `Containerfile`." | Renovate is disabled for the base pin on purpose — `sync-base-image.yml` owns it (see Base Image).     |
 | "I'll use `dnf5` like upstream Bluefin does."                        | Never. CentOS Stream 10 ships dnf4 only — `dnf` is the canonical tool here (bluefin-lts does the same). |
 
 ## Red Flags
