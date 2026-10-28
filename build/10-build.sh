@@ -35,6 +35,18 @@ rpm -q bash >/dev/null
 
 echo "::endgroup::"
 
+echo "::group:: Kernel modprobe Path"
+
+# The base pairs a Fedora CoreOS kernel with CentOS Stream 10 userspace. The
+# kernel execs CONFIG_MODPROBE_PATH (/usr/bin/modprobe, Fedora merged sbin into
+# bin) to autoload modules, but el10 kmod ships only /usr/sbin/modprobe.
+# Without this link the initramfs cannot autoload xfs and sysroot.mount fails.
+# projectbluefin/bluefin-lts, the previous base, shipped the same link. ln
+# fails once the base ships it too; drop this group then.
+ln -s kmod /usr/bin/modprobe
+
+echo "::endgroup::"
+
 echo "::group:: Repo State (EPEL + CRB)"
 
 # bluefin-lts pulls from EPEL 10 at build time; assert the repos are available
