@@ -13,8 +13,8 @@ Scripts are named with a number prefix (e.g., `10-build.sh`, `20-onepassword.sh`
 - **`30-ghostty.sh`** - Source-built Ghostty terminal (pinned Zig toolchain, `-Dcpu=baseline`)
 - **`35-pneuma-packages.sh`** - Omarchy dependencies from c10s/EPEL 10/COPR
 - **`36-pneuma-payload.sh`** - Omedora payload + Hyprland 0.56 stack, rpmbuilt from pinned specs
+- **`37-hyprglass.sh`** - Hyprglass plugin built against the installed Hyprland headers; loaded by the user's config
 - **`37-pneuma-config.sh`** - SDDM/session/skel configuration + smoke checks; makes SDDM the default display manager
-- **`38-pneuma-qml-patches.sh`** - EL10/Qt 6.10 QML source fixes for the omarchy shell (ES3 reserved words used as identifiers); also fixed upstream in the pneuma-el10 omedora fork
 - **`39-pomodoro.sh`** - `pneuma.pomodoro` focus-timer bar plugin seeded into `/etc/skel`
 - **`40-branding.sh`** - Plymouth boot splash and GRUB theme (runs last so the pneuma splash owns the initramfs)
 - **`41-emoji-clipboard.sh`** - Overrides omarchy-menu-emoji-insert with a persistent wl-copy (el10's wl-clipboard 2.2.1 lacks `--sensitive`)

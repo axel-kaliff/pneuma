@@ -10,11 +10,11 @@
 # for Flatpak browsers (entries live in the flatpak export dirs; Exec wraps
 # `flatpak run`). Resolve the entry across all standard dirs and launch
 # Flatpak browsers via their app id instead.
+# Get the default from omarchy-cmd-default-browser: Omarchy 4.5 lists
+# omarchy-browser.desktop (Exec is this script) as the Hyprland http handler;
+# resolving that entry directly would re-exec this script forever.
 
-default_browser=$(env -u BROWSER xdg-settings get default-web-browser)
-if [[ -z $default_browser ]]; then
-  default_browser=$(xdg-mime query default x-scheme-handler/https)
-fi
+default_browser=$(omarchy-cmd-default-browser)
 
 desktop_file=""
 for dir in "$HOME/.local/share/applications" \

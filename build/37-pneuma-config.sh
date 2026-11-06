@@ -217,17 +217,20 @@ echo "::group:: Vim-Style Window Navigation"
 # bindings.lua fully commented. SUPER + hjkl focuses, + SHIFT swaps. The three
 # defaults that owned those keys move to the same key with ALT added, except
 # SUPER + ALT + K (already the tmux cheatsheet), so the Omarchy keybindings
-# menu takes SHIFT + ALT. Unbinds must precede the rebinds.
+# menu takes SHIFT + ALT; layout cycle-back on SUPER + ALT + L moves there
+# the same way. Unbinds must precede the rebinds.
 cat >> /etc/skel/.config/hypr/bindings.lua << 'EOF'
 
 -- Pneuma default: vim-style window navigation.
 hl.unbind("SUPER + J") -- was: Toggle window split
 hl.unbind("SUPER + K") -- was: Keybindings
-hl.unbind("SUPER + L") -- was: Toggle workspace layout
+hl.unbind("SUPER + L") -- was: Cycle workspace layout
+hl.unbind("SUPER + ALT + L") -- was: Cycle workspace layout back
 
 o.bind("SUPER + ALT + J", "Toggle window split", hl.dsp.layout("togglesplit"))
 o.bind("SUPER + SHIFT + ALT + K", "Keybindings", "omarchy-menu-keybindings")
-o.bind("SUPER + ALT + L", "Toggle workspace layout", "omarchy-hyprland-workspace-layout-toggle")
+o.bind("SUPER + ALT + L", "Cycle workspace layout", "omarchy-hyprland-workspace-layout-toggle")
+o.bind("SUPER + SHIFT + ALT + L", "Cycle workspace layout back", "omarchy-hyprland-workspace-layout-toggle back")
 
 o.bind("SUPER + H", "Focus on left window", hl.dsp.focus({ direction = "l" }))
 o.bind("SUPER + J", "Focus on below window", hl.dsp.focus({ direction = "d" }))
@@ -241,8 +244,9 @@ o.bind("SUPER + SHIFT + L", "Swap window to the right", hl.dsp.window.swap({ dir
 
 -- Input language switching, replacing the Alt+Alt toggle that input.lua no
 -- longer sets (it broke AltGr). The top-bar toggle it displaces moves to
--- SUPER + SHIFT + T.
+-- SUPER + SHIFT + T, dropping Activity (btop); btop stays in the menu.
 hl.unbind("SUPER + SHIFT + SPACE") -- was: Toggle top bar
+hl.unbind("SUPER + SHIFT + T") -- was: Activity (btop)
 o.bind_toggle("SUPER + SHIFT + T", "Toggle top bar", "bar")
 o.bind("SUPER + SHIFT + SPACE", "Next keyboard layout", "hyprctl switchxkblayout all next")
 EOF
@@ -344,6 +348,9 @@ cp -r /ctx/build/files/usr/share/pneuma/omarchy-overrides /usr/share/pneuma/omar
 for override in /usr/share/pneuma/omarchy-overrides/bin/*; do
     install -m755 "${override}" "/usr/bin/$(basename "${override}")"
 done
+# omarchy-launch-browser and omarchy-update-restart call these; both arrived
+# with Omarchy 4.5, so an older omedora payload fails the build here.
+[[ -x /usr/bin/omarchy-cmd-default-browser && -x /usr/bin/omarchy-system ]]
 
 # Note: omedora-settings ships /etc drop-ins (sysctl, logind, resolved, oomd,
 # sudoers) reviewed and accepted as-is. Judgment call kept Omarchy-authentic:
@@ -412,13 +419,22 @@ rpm -q --qf '%{VERSION}' hyprland-no-session | grep -qE '^(0\.(5[6-9]|[6-9][0-9]
 [[ "$(find /usr/share/omarchy/migrations -maxdepth 1 -name '*.sh' | wc -l)" -gt 0 ]]
 [[ "$(find /usr/share/omarchy/migrations -maxdepth 1 -name '*.sh' | wc -l)" == \
     "$(find /etc/skel/.local/state/omarchy/migrations -maxdepth 1 -name '*.sh' | wc -l)" ]]
+# Qt 6.10's QML parser rejects ES3 future reserved words as identifiers;
+# one such declaration takes down the plugin that declares it.
+# Payload fixes belong in the pneuma-el10 omedora fork.
+if grep -rqE '\b(var|let|const)[[:space:]]+(transient|byte|char|double|final|int|long|short|public|abstract|boolean|float|goto|implements|interface|native|package|private|protected|synchronized|throws|volatile|enum)\b' \
+    --include='*.qml' --include='*.js' /usr/share/omarchy/shell/; then
+    echo "ERROR: QML reserved-word identifier in the omarchy shell — Qt 6.10 will not parse it" >&2
+    exit 1
+fi
 # EL10 ships wl-clipboard 2.2.1, whose wl-copy has no --sensitive: it exits 1
 # without ever setting the clipboard, so the copy silently does nothing while
 # the caller carries on. Guard the whole class rather than the two commands
 # that hit it -- if an omarchy update trips this, that command needs an
-# override in omarchy-overrides/bin too.
+# override in omarchy-overrides/bin too; a hit under the shell is fixed in
+# the pneuma-el10 omedora fork instead.
 # Plain `! grep` is exempt from errexit, so assert through an if.
-if grep -lE '^[^#]*wl-copy[^#]*--sensitive' /usr/bin/omarchy-*; then
+if grep -rlE '^[^#]*wl-copy[^#]*--sensitive' /usr/bin/omarchy-* /usr/share/omarchy/shell; then
     echo "wl-copy --sensitive still present in the commands listed above" >&2
     exit 1
 fi
