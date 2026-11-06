@@ -29,6 +29,9 @@ copr_install_isolated "akaliff/pneuma" "hyprland-devel-${HYPRLAND_EVR}"
 pkg-config --print-requires hyprland | awk '{print "pkgconfig(" $1 ")"}' >"${BUILD_DIR}/pkgconfig-deps.txt"
 mapfile -t PKGCONFIG_DEPS <"${BUILD_DIR}/pkgconfig-deps.txt"
 copr_install_isolated "akaliff/pneuma" "${PKGCONFIG_DEPS[@]}"
+# gcc-toolset installs under /opt/rh; /opt links to /var/opt, which is absent
+# at build time. clean-stage.sh removes /var/opt again before bootc lint.
+mkdir -p /var/opt
 dnf -y install glslang-devel pixman-devel libdrm-devel wayland-devel \
     gcc-toolset-15-gcc-c++ make git
 pkg-config --cflags hyprland pixman-1 libdrm wayland-server
