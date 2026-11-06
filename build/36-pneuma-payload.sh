@@ -28,9 +28,8 @@ set -eoux pipefail
 # (wayland 1.25, wayland-protocols 1.49, libinput >= 1.29), so no third-party
 # lib backports are needed at build or runtime.
 #
-# To rebuild the stack after an omedora upstream bump:
-#   cd ~/omedora && git fetch upstream && git rebase upstream/omedora-4 \
-#     && git push  →  COPR rebuilds (webhook)  →  rebuild this image.
+# To rebuild the stack after an omedora upstream bump, follow "Bump the
+# Omarchy payload" in .agents/skills/finpilot-maintain/SKILL.md.
 ###############################################################################
 
 PNEUMA_REPOFILE=/etc/yum.repos.d/_copr-akaliff-pneuma.repo

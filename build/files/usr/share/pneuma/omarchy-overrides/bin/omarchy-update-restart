@@ -9,7 +9,7 @@ echo
 
 confirm_reboot() {
   gum confirm "$1" && {
-    omarchy-system-reboot
+    omarchy-system reboot
     exit 0
   }
 }

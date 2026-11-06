@@ -143,6 +143,14 @@ Renovate handles digest updates automatically. It needs a valid `RENOVATE_TOKEN`
 digest-only PRs. If Renovate stops creating PRs, run the Renovate section of
 `finpilot-troubleshooting`.
 
+## Bump the Omarchy payload (omedora fork)
+
+- The payload is the `omedora` RPM in the `akaliff/pneuma` COPR, built per package from the `pneuma-el10` branch of `axel-kaliff/omedora` (SCM source, `make_srpm`). Builds are started by hand per package (`copr-cli build-package akaliff/pneuma --name <pkg>`); there is no webhook. A published build reaches every image rebuild, `:stable`'s weekly one included, without the `main` → `stable` promotion.
+- Upstream force-rebases `omedora-4` onto each Omarchy release, so `git rebase upstream/omedora-4` replays upstream's pre-rebase history. Replay only the pneuma commits: `git rebase --onto upstream/omedora-4 <first-pneuma-commit>^`.
+- Before building, check every new `Requires:` in `omedora.spec` and `omedora-settings.spec` has an EL10 provider (c10s, EPEL 10, or this COPR). Omarchy 4.5 added `mise` (built in this COPR from upstream's `mise.spec`) and `libdnf5-plugin-actions` (Fedora-gated in the fork; EL10 runs dnf4).
+- EL10 breaks two payload patterns: ES3 reserved words declared as QML identifiers (Qt 6.10) and `wl-copy --sensitive` (wl-clipboard 2.2.1). Fix them in the fork; the smoke checks in `build/37-pneuma-config.sh` fail the image build on either.
+- Rebuild only the packages whose spec `Version`-`Release` moved, then rebuild the image.
+
 ## Maintenance Schedule Recommendations
 
 ### Weekly
