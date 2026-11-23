@@ -150,6 +150,8 @@ digest-only PRs. If Renovate stops creating PRs, run the Renovate section of
 - Before building, check every new `Requires:` in `omedora.spec` and `omedora-settings.spec` has an EL10 provider (c10s, EPEL 10, or this COPR). Omarchy 4.5 added `mise` (built in this COPR from upstream's `mise.spec`) and `libdnf5-plugin-actions` (Fedora-gated in the fork; EL10 runs dnf4).
 - EL10 breaks ES3 reserved words declared as QML identifiers (Qt 6.10). Fix them in the fork; the smoke check in `build/37-pneuma-config.sh` fails the image build on one. `wl-copy --sensitive` works since this COPR ships wl-clipboard 2.3.0 over c10s's 2.2.1 (2026-11-23), and `build/36-pneuma-payload.sh` asserts the version.
 - Rebuild only the packages whose spec `Version`-`Release` moved, then rebuild the image.
+- The pneuma commits are `<old upstream head>..pneuma-el10`. `git reflog show upstream/omedora-4` names the old head after upstream's force-push (2026-11-23: `fbf31dfab`, 11 commits).
+- When the rebase gives a spec the same `Version`-`Release` that this COPR already built, raise `Release` past it. Otherwise dnf never upgrades installed systems. On 2026-11-23 both upstream's aquamarine rebuild and pneuma's Lua fix were `hyprland-0.56.2-2`, so the result became `-3`.
 
 ## Maintenance Schedule Recommendations
 
