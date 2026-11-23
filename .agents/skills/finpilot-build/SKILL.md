@@ -118,10 +118,11 @@ Fedora CoreOS stable kernel. `sync-base-image.yml` owns the digest pin;
   GNOME version and the `ujust devmode` recipe against the running image.
 - The kernel must find `modprobe` at its `CONFIG_MODPROBE_PATH`
   (`grep MODPROBE_PATH /usr/lib/modules/*/config`). Fedora kernels use
-  `/usr/bin/modprobe`; el10 kmod ships only `/usr/sbin/modprobe`, so
-  `10-build.sh` adds the link. Without it the initramfs cannot autoload `xfs`
-  and boot stops at `Failed to mount sysroot.mount` with no journal saved
-  (2026-10-28; tunaOS#2518 is the same failure).
+  `/usr/bin/modprobe`; el10 kmod ships only `/usr/sbin/modprobe`, so the base
+  links it (ublue-os/bluefin-lts#2225, 2026-11-18; pneuma's own link then
+  failed every build with `File exists`). Without it the initramfs cannot
+  autoload `xfs` and boot stops at `Failed to mount sysroot.mount` with no
+  journal saved (2026-10-28; tunaOS#2518 is the same failure).
 
 ## Common Rationalizations
 
