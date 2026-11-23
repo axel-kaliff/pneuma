@@ -42,7 +42,7 @@ QUALIFIED_KERNEL="$(find /lib/modules -mindepth 1 -maxdepth 1 -printf '%f\n' | s
 # turns a passing assert into a failed build.
 initramfs_listing="$(lsinitrd "/lib/modules/${QUALIFIED_KERNEL}/initramfs.img")"
 grep -q 'plymouth/themes/pneuma/pneuma.script' <<< "${initramfs_listing}"
-# sysroot.mount autoloads xfs through /usr/bin/modprobe (10-build.sh).
+# sysroot.mount autoloads xfs through /usr/bin/modprobe (the base links it).
 grep -q ' usr/bin/modprobe -> ' <<< "${initramfs_listing}"
 
 echo "::endgroup::"
