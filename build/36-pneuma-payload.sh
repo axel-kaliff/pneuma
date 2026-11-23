@@ -16,10 +16,10 @@ set -eoux pipefail
 #
 #   akaliff/pneuma ......... hypr 0.56 stack, quickshell, uwsm, starship,
 #                                omedora(+settings), keyd, muParser,
-#                                and libxkbcommon >= 1.11 (CS10
-#                                ships 1.7 — the single remaining base-lib
-#                                override; drop it when CS10 rebases past
-#                                1.11)
+#                                and base-lib overrides libxkbcommon >= 1.11
+#                                (CS10 ships 1.7) and wl-clipboard 2.3.0
+#                                (CS10 ships 2.2.1); drop each once CS10
+#                                catches up
 #   yselkowitz/wlroots-epel .... leaf Wayland tools EL10 lacks (foot, grim,
 #                                slurp, wtype, brightnessctl) — trusted Fedora
 #                                maintainer, real epel-10 chroot
@@ -71,6 +71,8 @@ echo "::group:: Install the Omarchy runtime set"
 # omedora-settings from pneuma) resolves in a single depsolve.
 #   libxkbcommon: listed explicitly so the pneuma 1.11 build out-versions the
 #     c10s 1.7 in the base image (soname-stable additive upgrade).
+#   wl-clipboard: listed explicitly so the pneuma 2.3.0 build out-versions the
+#     c10s 2.2.1, whose wl-copy has no --sensitive.
 #   libinput: pulls CS10's current build (hyprland is built against >= 1.29;
 #     the runtime dependency is soname-level and the base may predate it).
 #   muParser rides in as hyprland's automatic soname dependency.
@@ -87,6 +89,7 @@ dnf -y --best install --enablerepo=epel-multimedia \
     ttfx \
     libinput \
     libxkbcommon \
+    wl-clipboard \
     foot \
     grim \
     slurp \
@@ -105,6 +108,10 @@ rpm -q libinput --qf '%{VERSION}\n' | grep -qE '^1\.(29|[3-9][0-9])' || {
 }
 rpm -q libxkbcommon --qf '%{VERSION}\n' | grep -qE '^1\.(1[1-9]|[2-9][0-9])' || {
     echo "ERROR: libxkbcommon $(rpm -q libxkbcommon --qf '%{VERSION}') < 1.11 — pneuma COPR build did not win" >&2
+    exit 1
+}
+rpm -q wl-clipboard --qf '%{VERSION}\n' | grep -qE '^2\.([3-9]|[1-9][0-9])|^[3-9]\.' || {
+    echo "ERROR: wl-clipboard $(rpm -q wl-clipboard --qf '%{VERSION}') < 2.3 — pneuma COPR build did not win" >&2
     exit 1
 }
 if ldd /usr/bin/Hyprland | grep -q 'not found'; then

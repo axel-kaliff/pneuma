@@ -9,9 +9,10 @@
 # build/41-emoji-clipboard.sh. Differences from upstream, and why:
 #
 # - Upstream pipes into `wl-copy --sensitive --foreground` and kills the
-#   process ~0.35s later. On this image that fails outright: --sensitive
-#   needs wl-clipboard >= 2.3.0 and el10 ships 2.2.1, so wl-copy exits 1
-#   and the emoji never reaches the clipboard at all.
+#   process ~0.35s later. On this image that failed outright until pneuma's
+#   COPR build of 2.3.0 (build/36): --sensitive needs wl-clipboard >= 2.3.0
+#   and el10 shipped 2.2.1, so wl-copy exited 1 and the emoji never reached
+#   the clipboard at all.
 # - Even where --sensitive exists, killing the transient owner wipes the
 #   emoji from the clipboard right after the synthetic paste. We want
 #   picker selections to stay on the clipboard, so wl-copy runs plain:
