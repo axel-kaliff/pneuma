@@ -1,6 +1,6 @@
 #!/bin/bash
-# pneuma override — upstream passes `wl-copy --sensitive`, which EL10's
-# wl-clipboard 2.2.1 does not have. wl-copy exited 1 before setting the
+# pneuma override — until pneuma's COPR build of 2.3.0 (36), EL10 shipped
+# wl-clipboard 2.2.1 without --sensitive. wl-copy exited 1 before setting the
 # clipboard, so the Shift+Insert below pasted whatever was already there.
 #
 # Upstream also serves the emoji from a foreground wl-copy it kills right
