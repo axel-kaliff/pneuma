@@ -427,6 +427,18 @@ if grep -rqE '\b(var|let|const)[[:space:]]+(transient|byte|char|double|final|int
     echo "ERROR: QML reserved-word identifier in the omarchy shell — Qt 6.10 will not parse it" >&2
     exit 1
 fi
+# A headless load must get past every QML import and parse: on 2026-11-24
+# quickshell pinned the shell to QtQuick 6.11 on EL10's Qt 6.10 and :stable
+# shipped with no bar or app menu. Offscreen there is no Wayland layer shell,
+# so the only acceptable failure is "No PanelWindow backend loaded".
+shell_log="$(XDG_RUNTIME_DIR="$(mktemp -d)" QT_QPA_PLATFORM=offscreen \
+    timeout 30 qs -p /usr/share/omarchy/shell 2>&1)" || true
+if grep -q 'Failed to load configuration' <<< "${shell_log}" &&
+    ! grep -q 'No PanelWindow backend loaded' <<< "${shell_log}"; then
+    echo "ERROR: Omarchy shell does not load:" >&2
+    grep -E 'ERROR|caused by' <<< "${shell_log}" >&2
+    exit 1
+fi
 
 echo "::endgroup::"
 
