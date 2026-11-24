@@ -58,6 +58,7 @@ release, update both the `FEDORA_MAJOR_VERSION` ARG and the base image tag.
 | `20-*.sh`          | Optional extras: third-party repos, COPR packages                                     |
 | `30-*.sh`          | Optional desktop swaps                                                                |
 | `37-hyprglass.sh`  | Hyprglass built against the installed Hyprland EVR; user's config loads the plugin    |
+| `42-flea.sh`       | flea from its pinned release tarball (bump `FLEA_VERSION` and `FLEA_SHA256` together) |
 | `clean-stage.sh`   | Always runs last: reverts `keepcache`, disables fedora flatpak repo, clears artefacts |
 
 ### Template build script rules

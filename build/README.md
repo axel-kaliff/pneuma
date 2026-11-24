@@ -18,6 +18,7 @@ Scripts are named with a number prefix (e.g., `10-build.sh`, `20-onepassword.sh`
 - **`39-pomodoro.sh`** - `pneuma.pomodoro` focus-timer bar plugin seeded into `/etc/skel`
 - **`40-branding.sh`** - Plymouth boot splash and GRUB theme (runs last so the pneuma splash owns the initramfs)
 - **`41-emoji-clipboard.sh`** - Overrides omarchy-menu-emoji-insert with a persistent wl-copy (upstream kills the clipboard owner right after pasting)
+- **`42-flea.sh`** - Installs the flea GUI file manager from its pinned release tarball, laid out like upstream's Makefile install
 
 ## Example Scripts
 
