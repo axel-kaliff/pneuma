@@ -10,9 +10,10 @@ set -eoux pipefail
 # `wl-copy --sensitive --foreground` plus a synthetic Shift+Insert, killing
 # the wl-copy owner afterwards. Two problems here:
 #
-# - --sensitive needs wl-clipboard >= 2.3.0; el10 ships 2.2.1, so wl-copy
-#   exits 1 and the emoji never reaches the clipboard (same Arch-assumption
-#   class as the ttfx screensaver fix).
+# - --sensitive needs wl-clipboard >= 2.3.0; until pneuma's COPR build of
+#   2.3.0 (36), el10 shipped 2.2.1, so wl-copy exited 1 and the emoji never
+#   reached the clipboard (same Arch-assumption class as the ttfx
+#   screensaver fix).
 # - Even with a new enough wl-clipboard, the kill wipes the clipboard
 #   ~0.35s after the paste, so a picked emoji can never be pasted manually.
 #
