@@ -6,21 +6,12 @@ name: Build and Push Image
 #            factory release gate)
 #   stable = production branch, publishes :stable
 # promote-main-to-stable.yml opens the main -> stable promotion PR.
-#
-# PR builds are disabled by default to save CI minutes. To enable them, add:
-#   pull_request:
-#     branches:
-#       - main
-#     paths-ignore:
-#       - "**.md"
-#       - ".github/workflows/*validate*.yml"
 on:
+  # No paths-ignore on pull_request: "Build and push image" is a required check
+  # on main, and a path-skipped run would leave it pending on docs-only PRs.
   pull_request:
     branches:
       - main
-    paths-ignore:
-      - "**.md"
-      - ".github/workflows/*validate*.yml"
   push:
     branches:
       - main
