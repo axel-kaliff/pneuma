@@ -129,7 +129,8 @@ just run-vm-iso
 
 Direct pushes to `main` bypass validation and create untraceable changes. PRs
 trigger `pr-validation.yml` and the `validate-*.yml` checks; branch protection
-should require PRs with the `validate` status check (setup: `finpilot-onboarding`).
+should require PRs with the `validate` and `Build and push image` status checks
+(setup: `finpilot-onboarding`).
 
 ### PR Best Practices
 
