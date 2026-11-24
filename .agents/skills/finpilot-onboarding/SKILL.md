@@ -78,6 +78,10 @@ This token allows Renovate to open PRs for digest bumps and dependency updates.
    - **Require a pull request before merging**
    - **Require status checks to pass before merging**
    - Add `validate` as a required status check (from `pr-validation.yml`)
+   - Add `Build and push image` too (from `build-image.yml`). With only
+     `validate`, the self-merging base-bump PRs #88-#92 landed on `main` with
+     red builds (2026-11-18 to 11-21). `build-image.yml` builds every PR for
+     this reason: a path-skipped run leaves a required check pending forever.
    - (Optional) **Require branches to be up to date before merging**
 
 This ensures PRs are validated before merging and Renovate can auto-merge safe digest updates.
@@ -160,7 +164,7 @@ requires the `SIGNING_SECRET` repo secret (public key committed as
 - [ ] GitHub Actions enabled in the fork?
 - [ ] `RENOVATE_TOKEN` secret added (Classic PAT, `repo` + `workflow`)?
 - [ ] Auto-merge enabled in repository settings?
-- [ ] Branch protection for `main` configured with `validate` as required check?
+- [ ] Branch protection for `main` requires `validate` and `Build and push image`?
 - [ ] First green build succeeded and image published to GHCR?
 - [ ] README contains the "What Makes this Raptor Different" section?
 - [ ] Signing verified on the first signed build?

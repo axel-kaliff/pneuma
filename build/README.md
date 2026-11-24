@@ -17,7 +17,7 @@ Scripts are named with a number prefix (e.g., `10-build.sh`, `20-onepassword.sh`
 - **`37-pneuma-config.sh`** - SDDM/session/skel configuration + smoke checks; makes SDDM the default display manager
 - **`39-pomodoro.sh`** - `pneuma.pomodoro` focus-timer bar plugin seeded into `/etc/skel`
 - **`40-branding.sh`** - Plymouth boot splash and GRUB theme (runs last so the pneuma splash owns the initramfs)
-- **`41-emoji-clipboard.sh`** - Overrides omarchy-menu-emoji-insert with a persistent wl-copy (el10's wl-clipboard 2.2.1 lacks `--sensitive`)
+- **`41-emoji-clipboard.sh`** - Overrides omarchy-menu-emoji-insert with a persistent wl-copy (upstream kills the clipboard owner right after pasting)
 
 ## Example Scripts
 

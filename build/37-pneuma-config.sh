@@ -427,17 +427,6 @@ if grep -rqE '\b(var|let|const)[[:space:]]+(transient|byte|char|double|final|int
     echo "ERROR: QML reserved-word identifier in the omarchy shell — Qt 6.10 will not parse it" >&2
     exit 1
 fi
-# EL10 ships wl-clipboard 2.2.1, whose wl-copy has no --sensitive: it exits 1
-# without ever setting the clipboard, so the copy silently does nothing while
-# the caller carries on. Guard the whole class rather than the two commands
-# that hit it -- if an omarchy update trips this, that command needs an
-# override in omarchy-overrides/bin too; a hit under the shell is fixed in
-# the pneuma-el10 omedora fork instead.
-# Plain `! grep` is exempt from errexit, so assert through an if.
-if grep -rlE '^[^#]*wl-copy[^#]*--sensitive' /usr/bin/omarchy-* /usr/share/omarchy/shell; then
-    echo "wl-copy --sensitive still present in the commands listed above" >&2
-    exit 1
-fi
 
 echo "::endgroup::"
 
