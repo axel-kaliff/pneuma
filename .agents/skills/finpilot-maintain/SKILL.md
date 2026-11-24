@@ -152,6 +152,7 @@ digest-only PRs. If Renovate stops creating PRs, run the Renovate section of
 - Rebuild only the packages whose spec `Version`-`Release` moved, then rebuild the image.
 - The pneuma commits are `<old upstream head>..pneuma-el10`. `git reflog show upstream/omedora-4` names the old head after upstream's force-push (2026-11-23: `fbf31dfab`, 11 commits).
 - When the rebase gives a spec the same `Version`-`Release` that this COPR already built, raise `Release` past it. Otherwise dnf never upgrades installed systems. On 2026-11-23 both upstream's aquamarine rebuild and pneuma's Lua fix were `hyprland-0.56.2-2`, so the result became `-3`.
+- Upstream targets Fedora's libraries, which are newer than EL10's. hyprtoolkit 0.6.0 uses `PANGO_WRAP_NONE` (pango 1.56), but EL10 ships 1.54 (COPR 11382048, 2026-11-24). Patch these in the fork behind a version check such as `PANGO_VERSION_CHECK`, so Fedora keeps upstream's code, as `hyprtoolkit-el10-pango-wrap-none.patch` does.
 
 ## Maintenance Schedule Recommendations
 
