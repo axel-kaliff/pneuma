@@ -1,0 +1,89 @@
+---
+name: Check omedora drift
+
+# Keeps one issue open while the Omarchy payload lags upstream or its COPR builds.
+#
+# The image gets omedora through hand-started COPR builds of the pneuma fork;
+# on 2026-11-23 the fork was 360 upstream commits behind without any signal.
+# Check both links daily: upstream to fork, then fork to each built package.
+# Reuse the issue while gaps remain and close it once both links are current.
+#
+# Follow "Bump the Omarchy payload (omedora fork)" in
+# .agents/skills/finpilot-maintain/SKILL.md to replay the EL10 patches onto
+# upstream's force-rebased omedora-4 branch and rebuild the COPR packages.
+
+on:
+  schedule:
+    - cron: "30 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+concurrency:
+  group: omedora-drift
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Check the omedora payload against upstream
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check drift and reconcile the issue
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          gaps=()
+          behind_by=$(timeout 60 gh api \
+            repos/AndrewGaspar/omedora/compare/omedora-4...axel-kaliff:omedora:pneuma-el10 \
+            --jq .behind_by)
+          head=$(timeout 60 gh api repos/axel-kaliff/omedora/commits/pneuma-el10 \
+            --jq '.sha[0:7]')
+
+          if (( behind_by > 0 )); then
+            gaps+=("- The fork's \`pneuma-el10\` is ${behind_by} commits behind upstream \`omedora-4\`: replay the pneuma commits onto it (see \"Bump the Omarchy payload\" in .agents/skills/finpilot-maintain/SKILL.md).")
+          fi
+
+          for pkg in omedora omedora-settings; do
+            version=$(curl -fsS --max-time 30 \
+              "https://copr.fedorainfracloud.org/api_3/package?ownername=akaliff&projectname=pneuma&packagename=${pkg}&with_latest_succeeded_build=true" \
+              | jq -r .builds.latest_succeeded.source_package.version)
+            if ! built=$(grep -oP 'git\K[0-9a-f]{7}' <<< "${version}"); then
+              echo "::error::Cannot extract the fork commit from COPR ${pkg} version '${version}'"
+              exit 1
+            fi
+            if [[ "${built}" != "${head}" ]]; then
+              gaps+=("- COPR \`${pkg}\` was built from fork commit \`${built}\`, but \`pneuma-el10\` is at \`${head}\`: run \`copr-cli build-package akaliff/pneuma --name ${pkg}\`.")
+            fi
+          done
+
+          issue=$(timeout 60 gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+            --json number,title \
+            --jq '.[] | select(.title == "omedora payload is behind upstream") | .number' \
+            | head -n1)
+
+          if (( ${#gaps[@]} > 0 )); then
+            body=$(mktemp)
+            trap 'rm -f "${body}"' EXIT
+            {
+              printf 'Checked by .github/workflows/omedora-drift.yml on %s.\n\n' "$(date -u +%F)"
+              printf '%s\n' "${gaps[@]}"
+            } > "${body}"
+            if [[ -z "${issue}" ]]; then
+              timeout 60 gh issue create --repo "${GITHUB_REPOSITORY}" \
+                --title 'omedora payload is behind upstream' --body-file "${body}"
+            else
+              timeout 60 gh issue edit "${issue}" --repo "${GITHUB_REPOSITORY}" --body-file "${body}"
+            fi
+            printf '%s\n' "${gaps[@]}" >> "${GITHUB_STEP_SUMMARY}"
+          else
+            if [[ -n "${issue}" ]]; then
+              timeout 60 gh issue close "${issue}" --repo "${GITHUB_REPOSITORY}" \
+                --comment "Caught up: fork matches upstream omedora-4 and COPR matches the fork head."
+            fi
+            echo "omedora payload is level with upstream and COPR." >> "${GITHUB_STEP_SUMMARY}"
+          fi
